@@ -10,14 +10,9 @@ from dotenv import load_dotenv
 from twitchio.ext import commands
 
 try:
-    from bot3.command_loader import (
-        get_all_commands
-    )
-
+    from bot3.command_loader import get_all_commands
 except ImportError:
-    from command_loader import (
-        get_all_commands
-    )
+    from command_loader import get_all_commands
 
 
 load_dotenv()
@@ -30,14 +25,10 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 
 CONFIG_FILE = BASE_DIR / "chat_config.json"
-
 STREAMERS_FILE = BASE_DIR / "streamers.json"
 
 LOG_DIR = BASE_DIR / "logs"
-
-LOG_DIR.mkdir(
-    exist_ok=True
-)
+LOG_DIR.mkdir(exist_ok=True)
 
 LOG_FILE = LOG_DIR / "chat.log"
 
@@ -54,16 +45,13 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
 
     handlers=[
-
         logging.FileHandler(
             LOG_FILE,
             encoding="utf-8"
         ),
 
         logging.StreamHandler()
-
     ]
-
 )
 
 
@@ -80,6 +68,10 @@ logger = logging.getLogger(
 def load_json(file):
 
     if not file.exists():
+
+        logger.warning(
+            f"FILE NOT FOUND: {file.name}"
+        )
 
         return {}
 
@@ -100,8 +92,7 @@ def load_json(file):
             f"{file.name}: {e}"
         )
 
-
-    return {}
+        return {}
 
 
 
@@ -118,11 +109,9 @@ BOT_NICK = CONFIG.get(
     "bot_nick"
 )
 
-
 OAUTH = CONFIG.get(
     "oauth"
 )
-
 
 PREFIX = CONFIG.get(
     "prefix",
@@ -145,19 +134,14 @@ def load_channels():
     result = []
 
 
-    if isinstance(
-        data,
-        list
-    ):
+    if isinstance(data, list):
 
         for item in data:
-
 
             if not isinstance(
                 item,
                 dict
             ):
-
                 continue
 
 
@@ -181,12 +165,18 @@ def load_channels():
 # TWITCH CHAT BOT
 # ============================================================
 
-class TwitchChatBot(
-    commands.Bot
-):
+class TwitchChatBot(commands.Bot):
 
 
     def __init__(self):
+
+        channels = load_channels()
+
+
+        logger.info(
+            f"Подготовка подключения к каналам: {channels}"
+        )
+
 
         super().__init__(
 
@@ -194,7 +184,7 @@ class TwitchChatBot(
 
             prefix=PREFIX,
 
-            initial_channels=load_channels()
+            initial_channels=channels
 
         )
 
@@ -203,20 +193,32 @@ class TwitchChatBot(
 
 
 
+    # ========================================================
+    # READY
+    # ========================================================
+
     async def event_ready(
         self
     ):
 
         logger.info(
-            f"CHAT ONLINE: {self.nick}"
+            "✅ Успешная авторизация Twitch"
+        )
+
+        logger.info(
+            f"BOT NICK: {self.nick}"
         )
 
 
         logger.info(
-            f"CHANNELS: {load_channels()}"
+            f"Подключен к стримерам: {load_channels()}"
         )
 
 
+
+    # ========================================================
+    # JOIN CHANNEL
+    # ========================================================
 
     async def event_joined_channel(
         self,
@@ -232,10 +234,19 @@ class TwitchChatBot(
 
 
         logger.info(
-            f"JOINED {name}"
+            f"✅ Подключен к чату стримера: {name}"
         )
 
 
+        logger.info(
+            f"Команды загружены: {list(self.commands_cache[name].keys())}"
+        )
+
+
+
+    # ========================================================
+    # MESSAGE
+    # ========================================================
 
     async def event_message(
         self,
@@ -264,12 +275,15 @@ class TwitchChatBot(
 
 
 
-        # обновляем команды
+        logger.info(
+            f"Обработка команды {command} в {channel} от {message.author.name}"
+        )
+
+
 
         commands_list = get_all_commands(
             channel
         )
-
 
 
         data = commands_list.get(
@@ -279,6 +293,10 @@ class TwitchChatBot(
 
 
         if not data:
+
+            logger.info(
+                f"Команда не найдена: {command}"
+            )
 
             return
 
@@ -312,9 +330,23 @@ class TwitchChatBot(
         if text:
 
 
-            await message.channel.send(
-                text
-            )
+            try:
+
+                await message.channel.send(
+                    text
+                )
+
+
+                logger.info(
+                    f"Ответ отправлен: {command}"
+                )
+
+
+            except Exception as e:
+
+                logger.error(
+                    f"SEND ERROR {command}: {e}"
+                )
 
 
 
@@ -327,10 +359,16 @@ async def main():
     if not BOT_NICK or not OAUTH:
 
         logger.error(
-            "CHAT CONFIG ERROR"
+            "CHAT CONFIG ERROR: нет bot_nick или oauth"
         )
 
         return
+
+
+
+    logger.info(
+        "Запуск Twitch Chat Bot..."
+    )
 
 
     bot = TwitchChatBot()
