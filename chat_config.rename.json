@@ -1,0 +1,5 @@
+{
+    "bot_nick": "имя_твоего_twitch_бота",
+    "oauth": "oauth:xxxxxxxxxxxx",
+    "prefix": "!"
+}
