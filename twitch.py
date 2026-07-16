@@ -13,10 +13,15 @@ from aiogram.filters import Command
 
 
 try:
-    from bot3.twitch_api import get_twitch_api
+    from bot3.twitch_api import (
+        get_streamer_status,
+        get_streamers_status
+    )
 except ImportError:
-    from twitch_api import get_twitch_api
-
+    from twitch_api import (
+        get_streamer_status,
+        get_streamers_status
+    )
 
 
 logger = logging.getLogger("twitch_monitor")
