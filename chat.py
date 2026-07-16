@@ -348,13 +348,11 @@ class TwitchChatBot(commands.Bot):
                     f"SEND ERROR {command}: {e}"
                 )
 
-
-
 # ============================================================
-# START
+# START FROM MAIN BOT
 # ============================================================
 
-async def main():
+async def start_chat_bot():
 
     if not BOT_NICK or not OAUTH:
 
@@ -365,7 +363,6 @@ async def main():
         return
 
 
-
     logger.info(
         "Запуск Twitch Chat Bot..."
     )
@@ -373,8 +370,17 @@ async def main():
 
     bot = TwitchChatBot()
 
-
     await bot.start()
+
+
+
+# ============================================================
+# STANDALONE START
+# ============================================================
+
+async def main():
+
+    await start_chat_bot()
 
 
 
@@ -386,9 +392,9 @@ if __name__ == "__main__":
             main()
         )
 
-
     except KeyboardInterrupt:
 
         logger.info(
             "CHAT STOPPED"
         )
+
