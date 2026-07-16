@@ -241,3 +241,15 @@ def get_all_commands(
     return load_commands(
         streamer
     )
+    
+def get_all_commands(streamer):
+
+    commands = load_commands(
+        streamer
+    )
+
+    logger.info(
+        f"CHECK COMMANDS {streamer}: {list(commands.keys())}"
+    )
+
+    return commands
