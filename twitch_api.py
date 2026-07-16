@@ -887,3 +887,31 @@ def get_twitch_api(
 
 
     return _twitch
+    
+# ============================================================
+# PUBLIC ACCESS API
+# ============================================================
+
+def get_streamer_status(name):
+    """
+    Единая точка получения данных одного стримера
+    Twitch API -> cache -> name.json -> offline
+    """
+
+    twitch = get_twitch_api()
+
+    return twitch.get_stream(
+        name
+    )
+
+
+def get_streamers_status(names):
+    """
+    Единая точка получения списка стримеров
+    """
+
+    twitch = get_twitch_api()
+
+    return twitch.get_streams(
+        names
+    )
