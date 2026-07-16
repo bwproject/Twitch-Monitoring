@@ -29,6 +29,8 @@ sys.path.append(
 from admin import register_admin_handlers
 from command import register_command_handlers
 
+from chat import start_chat_bot
+
 from twitch import (
     monitor,
     watch_streamers_file,
