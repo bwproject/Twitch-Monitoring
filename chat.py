@@ -233,7 +233,7 @@ class TwitchChatBot(
         )
 
         logger.info(
-            f"BOT NICK: {self.nick}"
+            f"BOT NICK: {BOT_NICK}"
         )
 
         logger.info(
