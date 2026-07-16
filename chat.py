@@ -12,7 +12,6 @@ from twitchio.ext import commands
 
 try:
     from bot3.command_loader import get_all_commands
-
 except ImportError:
     from command_loader import get_all_commands
 
@@ -140,6 +139,7 @@ def load_channels():
         STREAMERS_FILE
     )
 
+
     result = []
 
 
@@ -210,6 +210,8 @@ class TwitchChatBot(
         )
 
 
+        self.bot_nick = BOT_NICK
+
         self.commands_cache = {}
 
 
@@ -228,7 +230,7 @@ class TwitchChatBot(
 
 
         logger.info(
-            f"BOT: {BOT_NICK}"
+            f"BOT: {self.bot_nick}"
         )
 
 
@@ -261,7 +263,7 @@ class TwitchChatBot(
 
 
         logger.info(
-            f"Команды загружены: {list(self.commands_cache[name].keys())}"
+            f"Команды: {list(self.commands_cache[name].keys())}"
         )
 
 
@@ -281,21 +283,8 @@ class TwitchChatBot(
             return
 
 
-        if not message.content:
-
-            return
-
-
-        channel = message.channel.name.lower()
-
 
         content = message.content.strip()
-
-
-
-        logger.info(
-            f"CHAT [{channel}] {message.author.name}: {content}"
-        )
 
 
 
@@ -307,15 +296,17 @@ class TwitchChatBot(
 
 
 
-        parts = content.split()
+        channel = message.channel.name.lower()
 
 
-        command = parts[0].lower()
+        command = content.split()[0].lower()
 
 
 
         logger.info(
-            f"Обработка команды {command} в {channel}"
+            f"Получена команда {command} "
+            f"в {channel} "
+            f"от {message.author.name}"
         )
 
 
@@ -326,7 +317,7 @@ class TwitchChatBot(
 
 
         logger.info(
-            f"Доступные команды: {list(commands_list.keys())}"
+            f"Доступные команды {channel}: {list(commands_list.keys())}"
         )
 
 
@@ -339,8 +330,7 @@ class TwitchChatBot(
 
         if not data:
 
-
-            logger.warning(
+            logger.info(
                 f"Команда не найдена: {command}"
             )
 
@@ -360,7 +350,6 @@ class TwitchChatBot(
             text = data
 
 
-
         elif isinstance(
             data,
             dict
@@ -376,7 +365,7 @@ class TwitchChatBot(
         if not text:
 
             logger.warning(
-                f"Пустой ответ для {command}"
+                f"Команда {command} без текста"
             )
 
             return
@@ -384,6 +373,7 @@ class TwitchChatBot(
 
 
         try:
+
 
             await message.channel.send(
                 text
@@ -396,6 +386,7 @@ class TwitchChatBot(
 
 
         except Exception as e:
+
 
             logger.error(
                 f"SEND ERROR {command}: {e}"
@@ -426,7 +417,7 @@ async def start_chat_bot():
 
 
         logger.error(
-            "CHAT CONFIG ERROR: отсутствуют данные Twitch"
+            "CHAT CONFIG ERROR"
         )
 
         return
@@ -436,7 +427,6 @@ async def start_chat_bot():
     logger.info(
         "🚀 Запуск Twitch Chat Bot..."
     )
-
 
 
     bot = TwitchChatBot()
@@ -463,7 +453,6 @@ if __name__ == "__main__":
         asyncio.run(
             main()
         )
-
 
     except KeyboardInterrupt:
 
