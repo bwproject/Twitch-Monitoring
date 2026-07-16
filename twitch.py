@@ -17,7 +17,9 @@ try:
         get_streamers_status,
         is_new_stream
     )
+
 except ImportError:
+
     from twitch_api import (
         get_streamer_status,
         get_streamers_status,
@@ -28,6 +30,7 @@ except ImportError:
 logger = logging.getLogger("twitch_monitor")
 
 
+
 # ============================================================
 # PATHS
 # ============================================================
@@ -36,9 +39,12 @@ BASE_DIR = Path(__file__).resolve().parent
 
 STREAMERS_FILE = BASE_DIR / "streamers.json"
 
+
 STREAMERS = []
 
 _last_mtime = None
+
+
 
 
 # ============================================================
@@ -48,6 +54,7 @@ _last_mtime = None
 def load_streamers():
 
     global STREAMERS
+
 
     if not STREAMERS_FILE.exists():
 
@@ -60,6 +67,7 @@ def load_streamers():
         return
 
 
+
     try:
 
         with STREAMERS_FILE.open(
@@ -70,30 +78,43 @@ def load_streamers():
             data = json.load(f)
 
 
-        if not isinstance(data, list):
+
+        if not isinstance(
+            data,
+            list
+        ):
 
             STREAMERS = []
 
             return
 
 
+
         result = []
 
 
+
         for streamer in data:
+
 
             name = streamer.get(
                 "name"
             )
 
+
             if not name:
+
                 continue
+
+
 
 
             custom_file = BASE_DIR / f"{name}.json"
 
 
+
             if custom_file.exists():
+
 
                 try:
 
@@ -105,15 +126,25 @@ def load_streamers():
                         custom = json.load(sf)
 
 
-                    if isinstance(custom, dict):
 
-                        result.append(custom)
+                    if isinstance(
+                        custom,
+                        dict
+                    ):
+
+
+                        result.append(
+                            custom
+                        )
+
 
                         logger.info(
                             f"Используется {custom_file.name}"
                         )
 
+
                         continue
+
 
 
                 except Exception as e:
@@ -123,15 +154,21 @@ def load_streamers():
                     )
 
 
-            result.append(streamer)
+
+            result.append(
+                streamer
+            )
+
 
 
         STREAMERS = result
 
 
+
         logger.info(
             f"STREAMERS LOADED: {[x.get('name') for x in STREAMERS]}"
         )
+
 
 
     except Exception as e:
@@ -141,6 +178,9 @@ def load_streamers():
         )
 
         STREAMERS = []
+
+
+
 
 
 
@@ -155,24 +195,35 @@ async def watch_streamers_file(
     global _last_mtime
 
 
+
     while True:
+
 
         try:
 
             if STREAMERS_FILE.exists():
 
+
                 mtime = STREAMERS_FILE.stat().st_mtime
 
 
+
                 if (
+
                     _last_mtime is None
+
                     or
+
                     mtime != _last_mtime
+
                 ):
+
 
                     _last_mtime = mtime
 
+
                     load_streamers()
+
 
 
         except Exception as e:
@@ -182,12 +233,10 @@ async def watch_streamers_file(
             )
 
 
+
         await asyncio.sleep(
             interval
         )
-
-
-
 # ============================================================
 # MONITOR
 # ============================================================
@@ -219,15 +268,21 @@ async def monitor(
                 continue
 
 
+
             names = [
+
                 s["name"].lower()
+
                 for s in STREAMERS
+
             ]
+
 
 
             logger.info(
                 f"CHECK: {names}"
             )
+
 
 
             online = get_streamers_status(
@@ -238,7 +293,9 @@ async def monitor(
 
             for streamer in STREAMERS:
 
+
                 name = streamer["name"].lower()
+
 
 
                 messages = streamer.get(
@@ -247,13 +304,16 @@ async def monitor(
                 )
 
 
+
                 url = f"https://twitch.tv/{name}"
 
 
 
                 if name not in state:
 
+
                     state[name] = {
+
 
                         "online": False,
 
@@ -264,11 +324,13 @@ async def monitor(
                         "start_time": None,
 
                         "peak_viewers": 0
+
                     }
 
 
 
                 st = state[name]
+
 
 
 
@@ -300,8 +362,30 @@ async def monitor(
                     )
 
 
+                    started_at = data.get(
+                        "started_at",
+                        ""
+                    )
 
-                    if not st["online"]:
+
+
+                    # ==============================================
+                    # НОВЫЙ СТРИМ
+                    # START только при реальном запуске
+                    # ==============================================
+
+                    if (
+
+                        not st["online"]
+
+                        and
+
+                        is_new_stream(
+                            name,
+                            started_at
+                        )
+
+                    ):
 
 
                         logger.info(
@@ -311,9 +395,12 @@ async def monitor(
 
                         st["online"] = True
 
+
                         st["title"] = title
 
+
                         st["game"] = game
+
 
 
                         st["start_time"] = datetime.now(
@@ -321,7 +408,9 @@ async def monitor(
                         )
 
 
+
                         st["peak_viewers"] = viewers
+
 
 
 
@@ -341,6 +430,7 @@ async def monitor(
 
                                     ch["chat_id"],
 
+
                                     messages.get(
                                         "start",
                                         ""
@@ -353,18 +443,53 @@ async def monitor(
                                         game=game,
 
                                         url=url
+
                                     ),
 
+
                                     parse_mode="HTML"
+
                                 )
 
 
 
                     else:
 
-                        if viewers > st["peak_viewers"]:
+
+                        # ==========================================
+                        # Бот запустился когда стрим уже идёт
+                        # Просто синхронизируем состояние
+                        # БЕЗ сообщения
+                        # ==========================================
+
+                        if not st["online"]:
+
+
+                            st["online"] = True
+
+
+                            st["title"] = title
+
+
+                            st["game"] = game
+
+
+
+                            st["start_time"] = datetime.now(
+                                timezone.utc
+                            )
+
 
                             st["peak_viewers"] = viewers
+
+
+
+                        elif viewers > st["peak_viewers"]:
+
+
+                            st["peak_viewers"] = viewers
+
+
 
 
 
@@ -380,17 +505,21 @@ async def monitor(
                     )
 
 
+
                     if offline:
+
 
                         st["title"] = offline.get(
                             "title",
                             st["title"]
                         )
 
+
                         st["game"] = offline.get(
                             "game_name",
                             st["game"]
                         )
+
 
 
 
@@ -402,13 +531,19 @@ async def monitor(
                         )
 
 
+
                         duration = (
+
                             datetime.now(
                                 timezone.utc
                             )
+
                             -
+
                             st["start_time"]
+
                         )
+
 
 
                         sec = int(
@@ -425,9 +560,11 @@ async def monitor(
                         minutes = rem // 60
 
 
+
                         dur = (
                             f"{hours}ч {minutes}мин"
                         )
+
 
 
 
@@ -447,6 +584,7 @@ async def monitor(
 
                                     ch["chat_id"],
 
+
                                     messages.get(
                                         "end",
                                         ""
@@ -461,10 +599,14 @@ async def monitor(
                                         peak_viewers=st["peak_viewers"],
 
                                         url=url
+
                                     ),
 
+
                                     parse_mode="HTML"
+
                                 )
+
 
 
 
@@ -480,6 +622,7 @@ async def monitor(
 
 
 
+
         except Exception as e:
 
             logger.exception(
@@ -487,12 +630,10 @@ async def monitor(
             )
 
 
+
         await asyncio.sleep(
             interval
         )
-
-
-
 # ============================================================
 # /twitchapi
 # ============================================================
@@ -505,13 +646,16 @@ def register_twitch_api_handler(dp):
         message: types.Message
     ):
 
+
         try:
+
 
             result = get_streamers_status(
                 [
                     "ninja"
                 ]
             )
+
 
 
             await message.answer(
@@ -522,7 +666,9 @@ def register_twitch_api_handler(dp):
             )
 
 
+
         except Exception as e:
+
 
             await message.answer(
                 f"❌ ERROR: {e}"
