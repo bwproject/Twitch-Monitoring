@@ -1,8 +1,6 @@
 # chat.py
 
-import os
 import json
-import time
 import logging
 import asyncio
 
@@ -10,6 +8,16 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from twitchio.ext import commands
+
+try:
+    from bot3.command_loader import (
+        get_all_commands
+    )
+
+except ImportError:
+    from command_loader import (
+        get_all_commands
+    )
 
 
 load_dotenv()
@@ -22,14 +30,17 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent
 
 CONFIG_FILE = BASE_DIR / "chat_config.json"
+
 STREAMERS_FILE = BASE_DIR / "streamers.json"
 
-GLOBAL_COMMANDS_FILE = BASE_DIR / "global_commands.json"
-
 LOG_DIR = BASE_DIR / "logs"
-LOG_DIR.mkdir(exist_ok=True)
+
+LOG_DIR.mkdir(
+    exist_ok=True
+)
 
 LOG_FILE = LOG_DIR / "chat.log"
+
 
 
 # ============================================================
@@ -55,13 +66,15 @@ logging.basicConfig(
 
 )
 
+
 logger = logging.getLogger(
     "twitch_chat"
 )
 
 
+
 # ============================================================
-# LOAD JSON
+# JSON
 # ============================================================
 
 def load_json(file):
@@ -87,7 +100,8 @@ def load_json(file):
             f"{file.name}: {e}"
         )
 
-        return {}
+
+    return {}
 
 
 
@@ -104,9 +118,11 @@ BOT_NICK = CONFIG.get(
     "bot_nick"
 )
 
+
 OAUTH = CONFIG.get(
     "oauth"
 )
+
 
 PREFIX = CONFIG.get(
     "prefix",
@@ -114,8 +130,9 @@ PREFIX = CONFIG.get(
 )
 
 
+
 # ============================================================
-# STREAMERS
+# CHANNELS
 # ============================================================
 
 def load_channels():
@@ -135,20 +152,25 @@ def load_channels():
 
         for item in data:
 
-            if isinstance(
+
+            if not isinstance(
                 item,
                 dict
             ):
 
-                name = item.get(
-                    "name"
+                continue
+
+
+            name = item.get(
+                "name"
+            )
+
+
+            if name:
+
+                result.append(
+                    name.lower()
                 )
-
-                if name:
-
-                    result.append(
-                        name.lower()
-                    )
 
 
     return result
@@ -156,58 +178,7 @@ def load_channels():
 
 
 # ============================================================
-# COMMANDS
-# ============================================================
-
-def load_commands(streamer=None):
-
-
-    commands = {}
-
-
-    global_commands = load_json(
-        GLOBAL_COMMANDS_FILE
-    )
-
-
-    if isinstance(
-        global_commands,
-        dict
-    ):
-
-        commands.update(
-            global_commands
-        )
-
-
-
-    if streamer:
-
-        file = BASE_DIR / f"{streamer}_commands.json"
-
-
-        local = load_json(
-            file
-        )
-
-
-        if isinstance(
-            local,
-            dict
-        ):
-
-            commands.update(
-                local
-            )
-
-
-    return commands
-
-
-
-
-# ============================================================
-# TWITCH BOT
+# TWITCH CHAT BOT
 # ============================================================
 
 class TwitchChatBot(
@@ -237,7 +208,7 @@ class TwitchChatBot(
     ):
 
         logger.info(
-            f"CHAT BOT ONLINE: {self.nick}"
+            f"CHAT ONLINE: {self.nick}"
         )
 
 
@@ -255,13 +226,13 @@ class TwitchChatBot(
         name = channel.name.lower()
 
 
-        self.commands_cache[name] = load_commands(
+        self.commands_cache[name] = get_all_commands(
             name
         )
 
 
         logger.info(
-            f"JOINED: {name}"
+            f"JOINED {name}"
         )
 
 
@@ -293,15 +264,11 @@ class TwitchChatBot(
 
 
 
-        if channel not in self.commands_cache:
+        # обновляем команды
 
-            self.commands_cache[channel] = load_commands(
-                channel
-            )
-
-
-
-        commands_list = self.commands_cache[channel]
+        commands_list = get_all_commands(
+            channel
+        )
 
 
 
@@ -329,6 +296,7 @@ class TwitchChatBot(
             text = data
 
 
+
         elif isinstance(
             data,
             dict
@@ -343,6 +311,7 @@ class TwitchChatBot(
 
         if text:
 
+
             await message.channel.send(
                 text
             )
@@ -355,7 +324,17 @@ class TwitchChatBot(
 
 async def main():
 
+    if not BOT_NICK or not OAUTH:
+
+        logger.error(
+            "CHAT CONFIG ERROR"
+        )
+
+        return
+
+
     bot = TwitchChatBot()
+
 
     await bot.start()
 
@@ -369,8 +348,9 @@ if __name__ == "__main__":
             main()
         )
 
+
     except KeyboardInterrupt:
 
         logger.info(
-            "CHAT BOT STOPPED"
+            "CHAT STOPPED"
         )
