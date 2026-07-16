@@ -26,18 +26,17 @@
       "end": "🔴 <u><b><a href=\"{url}\">{name}</a></b></u> оффнул!\n🔴 Подруб длился: <b>{duration}</b>\n🔴 Зрителей: <b>{peak_viewers}</b>\n\n#{name} #twitch #offline"
     }
   },
-  
   {
-    "name": "the_mr_mes109",
+    "name": "projectbw",
     "tg_id": 353294360,
     "preview": true,
     "channels": [
       {
         "chat_id": "-1001883601703",
-        "notify_start": true,
+        "notify_start": false,
         "notify_title_change": false,
         "notify_game_change": false,
-        "notify_end": true
+        "notify_end": false
       },
       {
         "chat_id": "-4558073157",
