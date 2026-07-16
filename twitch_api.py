@@ -1252,41 +1252,72 @@ def is_new_stream(
     )
 
 
-    old_start = streamer.get(
+    last_notified = streamer.get(
         "last_notified_start"
     )
 
 
-    # первый запуск бота
-    # если стример уже онлайн - НЕ уведомляем
+    current_stream = streamer.get(
+        "started_at"
+    )
 
-    if old_start is None:
+
+    # ========================================================
+    # ПЕРВЫЙ РАЗ ВИДИМ СТРИМ
+    # ========================================================
+    # Если бот только запустился и стример уже онлайн
+    # уведомление НЕ отправляем
+
+    if last_notified is None:
+
 
         streamer["last_notified_start"] = started_at
 
+
         cache[name] = streamer
 
-        save_cache(cache)
+
+        save_cache(
+            cache
+        )
+
 
         return False
 
 
 
-    # тот же самый стрим
+    # ========================================================
+    # ТОТ ЖЕ САМЫЙ СТРИМ
+    # ========================================================
 
-    if old_start == started_at:
+    if last_notified == started_at:
+
 
         return False
 
 
 
-    # новый стрим
+    # ========================================================
+    # НОВЫЙ СТРИМ
+    # ========================================================
 
     streamer["last_notified_start"] = started_at
 
+
+    streamer["started_at"] = started_at
+
+
     cache[name] = streamer
 
-    save_cache(cache)
+
+    save_cache(
+        cache
+    )
+
+
+    logger.info(
+        f"NEW STREAM DETECTED: {name} {started_at}"
+    )
 
 
     return True
