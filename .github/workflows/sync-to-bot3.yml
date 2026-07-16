@@ -1,0 +1,53 @@
+name: Sync bw_chat_bot to TikTok-Downloader-Bot/bot3
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+
+      - name: Setup git auth for target repo
+        run: |
+          git config --global url."https://x-access-token:${{ secrets.TARGET_REPO_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Clone target repository
+        run: |
+          git clone https://github.com/bwproject/TikTok-Downloader-Bot.git ../target
+
+      - name: Sync files into bot3 folder
+        run: |
+          mkdir -p ../target/bot3
+
+          # Полное зеркало bw_chat_bot в bot3
+          rsync -av --delete \
+            --exclude ".git" \
+            ./ ../target/bot3/
+
+      - name: Commit and push changes
+        run: |
+          cd ../target
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add bot3
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Sync bw_chat_bot to bot3"
+          git push origin main
+
+      - name: Cleanup
+        run: |
+          rm -rf ../target
