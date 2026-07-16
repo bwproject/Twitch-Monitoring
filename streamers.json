@@ -60,10 +60,10 @@
     "channels": [
       {
         "chat_id": "-1001627559386",
-        "notify_start": true,
+        "notify_start": false,
         "notify_title_change": false,
         "notify_game_change": false,
-        "notify_end": true
+        "notify_end": false
       },
       {
         "chat_id": "-4558073157",
