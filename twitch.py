@@ -10,37 +10,28 @@ from datetime import datetime, timezone
 from aiogram import Bot, types
 from aiogram.filters import Command
 
-
 try:
     from bot3.twitch_api import (
         get_streamer_status,
         get_streamers_status
     )
-
 except ImportError:
-
     from twitch_api import (
         get_streamer_status,
         get_streamers_status
     )
 
-
 logger = logging.getLogger("twitch_monitor")
-
 
 # ============================================================
 # PATHS
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
-
 STREAMERS_FILE = BASE_DIR / "streamers.json"
 
-
 STREAMERS = []
-
 _last_mtime = None
-
 
 
 # ============================================================
@@ -48,190 +39,86 @@ _last_mtime = None
 # ============================================================
 
 def load_streamers():
-
     global STREAMERS
 
-
     if not STREAMERS_FILE.exists():
-
         STREAMERS = []
-
-        logger.warning(
-            "streamers.json отсутствует"
-        )
-
+        logger.warning("streamers.json отсутствует")
         return
 
-
-
     try:
-
-        with STREAMERS_FILE.open(
-            "r",
-            encoding="utf-8"
-        ) as f:
-
+        with STREAMERS_FILE.open("r", encoding="utf-8") as f:
             data = json.load(f)
 
-
-
-        if not isinstance(
-            data,
-            list
-        ):
-
+        if not isinstance(data, list):
             STREAMERS = []
-
             return
-
-
 
         result = []
 
-
-
         for streamer in data:
-
-
-            name = streamer.get(
-                "name"
-            )
-
+            name = streamer.get("name")
 
             if not name:
-
                 continue
-
-
 
             custom_file = BASE_DIR / f"{name}.json"
 
-
-
             if custom_file.exists():
-
-
                 try:
-
-                    with custom_file.open(
-                        "r",
-                        encoding="utf-8"
-                    ) as sf:
-
+                    with custom_file.open("r", encoding="utf-8") as sf:
                         custom = json.load(sf)
 
-
-
-                    if isinstance(
-                        custom,
-                        dict
-                    ):
-
-
-                        result.append(
-                            custom
-                        )
-
-
+                    if isinstance(custom, dict):
+                        result.append(custom)
                         logger.info(
                             f"Используется {custom_file.name}"
                         )
-
-
                         continue
 
-
-
                 except Exception as e:
-
                     logger.error(
                         f"{custom_file}: {e}"
                     )
 
-
-
-            result.append(
-                streamer
-            )
-
-
+            result.append(streamer)
 
         STREAMERS = result
-
-
 
         logger.info(
             f"STREAMERS LOADED: {[x.get('name') for x in STREAMERS]}"
         )
 
-
-
     except Exception as e:
-
         logger.exception(
             f"LOAD ERROR: {e}"
         )
-
         STREAMERS = []
-
-
 
 
 # ============================================================
 # WATCH FILE
 # ============================================================
 
-async def watch_streamers_file(
-    interval=5
-):
-
+async def watch_streamers_file(interval=5):
     global _last_mtime
 
-
-
     while True:
-
-
         try:
-
             if STREAMERS_FILE.exists():
-
 
                 mtime = STREAMERS_FILE.stat().st_mtime
 
-
-
-                if (
-
-                    _last_mtime is None
-
-                    or
-
-                    mtime != _last_mtime
-
-                ):
-
-
+                if _last_mtime is None or mtime != _last_mtime:
                     _last_mtime = mtime
-
-
                     load_streamers()
 
-
-
         except Exception as e:
-
             logger.exception(
                 f"WATCH ERROR: {e}"
             )
 
-
-
-        await asyncio.sleep(
-            interval
-        )
-
-
+        await asyncio.sleep(interval)
 
 
 # ============================================================
@@ -245,128 +132,83 @@ async def monitor(
     interval=30
 ):
 
-
     state = {}
-
-
+    initialized = False
 
     while True:
 
-
         try:
 
-
             if not STREAMERS:
-
-
                 logger.warning(
                     "STREAMERS пустой"
                 )
 
-
-                await asyncio.sleep(
-                    interval
-                )
-
-
+                await asyncio.sleep(interval)
                 continue
 
 
-
-
             names = [
-
                 s["name"].lower()
-
                 for s in STREAMERS
-
             ]
-
-
 
             logger.info(
                 f"CHECK: {names}"
             )
 
 
-
-            online = get_streamers_status(
-                names
-            )
-
+            online = get_streamers_status(names)
 
 
             for streamer in STREAMERS:
 
-
                 name = streamer["name"].lower()
-
-
 
                 messages = streamer.get(
                     "messages",
                     {}
                 )
 
-
-
-                url = (
-                    f"https://twitch.tv/{name}"
-                )
-
+                url = f"https://twitch.tv/{name}"
 
 
                 if name not in state:
-
-
                     state[name] = {
-
-
                         "online": False,
-
                         "title": "",
-
                         "game": "",
-
                         "started_at": "",
-
                         "start_time": None,
-
                         "peak_viewers": 0
-
                     }
 
 
-
                 st = state[name]
-                
+
+
                 # ==================================================
                 # ONLINE
                 # ==================================================
 
                 if name in online:
 
-
                     data = online[name]
-
 
                     title = data.get(
                         "title",
                         ""
                     )
 
-
                     game = data.get(
                         "game_name",
                         ""
                     )
 
-
                     viewers = data.get(
                         "viewer_count",
                         0
                     )
-
 
                     started_at = data.get(
                         "started_at",
@@ -374,49 +216,46 @@ async def monitor(
                     )
 
 
+                    # ==============================================
+                    # ПЕРВЫЙ ЗАПУСК БОТА
+                    # НЕ ОТПРАВЛЯЕМ TELEGRAM
+                    # ==============================================
 
-                    # ==================================================
+                    if not initialized:
+
+                        st["online"] = True
+                        st["title"] = title
+                        st["game"] = game
+                        st["started_at"] = started_at
+                        st["start_time"] = datetime.now(
+                            timezone.utc
+                        )
+                        st["peak_viewers"] = viewers
+
+                        continue
+
+
+                    # ==============================================
                     # НОВЫЙ СТРИМ
-                    # ==================================================
+                    # ==============================================
 
-                    new_stream = (
-
+                    if (
                         not st["online"]
-
-                        or
-
-                        st.get(
-                            "started_at"
-                        ) != started_at
-
-                    )
-
-
-
-                    if new_stream:
-
+                        or st["started_at"] != started_at
+                    ):
 
                         logger.info(
                             f"START STREAM {name}"
                         )
 
-
                         st["online"] = True
-
                         st["title"] = title
-
                         st["game"] = game
-
                         st["started_at"] = started_at
-
-
                         st["start_time"] = datetime.now(
                             timezone.utc
                         )
-
-
                         st["peak_viewers"] = viewers
-
 
 
                         for ch in streamer.get(
@@ -424,199 +263,164 @@ async def monitor(
                             []
                         ):
 
-
-                            if ch.get(
+                            if not ch.get(
                                 "notify_start",
                                 True
                             ):
+                                continue
 
 
-                                try:
+                            try:
 
-                                    await bot.send_message(
+                                await bot.send_message(
 
-                                        ch["chat_id"],
+                                    ch["chat_id"],
 
+                                    messages.get(
+                                        "start",
+                                        ""
+                                    ).format(
+                                        name=name,
+                                        title=title,
+                                        game=game,
+                                        url=url
+                                    ),
 
-                                        messages.get(
-                                            "start",
-                                            ""
-                                        ).format(
+                                    parse_mode="HTML"
 
-                                            name=name,
+                                )
 
-                                            title=title,
+                            except Exception as e:
 
-                                            game=game,
-
-                                            url=url
-
-                                        ),
-
-
-                                        parse_mode="HTML"
-
-                                    )
-
-
-                                except Exception as e:
-
-                                    logger.error(
-                                        f"START SEND ERROR {name}: {e}"
-                                    )
-
-
+                                logger.error(
+                                    f"START SEND ERROR {name}: {e}"
+                                )
 
                     else:
 
-
-                        # обычное обновление онлайна
-
-
                         st["title"] = title
-
                         st["game"] = game
 
-
                         if viewers > st["peak_viewers"]:
-
                             st["peak_viewers"] = viewers
-
-
-
-
-
                 # ==================================================
                 # OFFLINE
                 # ==================================================
 
                 else:
 
+                    if not st["online"]:
+                        continue
 
-                    if st["online"]:
+
+                    logger.info(
+                        f"END STREAM {name}"
+                    )
 
 
-                        logger.info(
-                            f"END STREAM {name}"
+                    duration = (
+                        datetime.now(
+                            timezone.utc
                         )
+                        -
+                        st["start_time"]
+                    )
 
 
+                    sec = int(
+                        duration.total_seconds()
+                    )
 
-                        duration = (
 
-                            datetime.now(
-                                timezone.utc
+                    hours, rem = divmod(
+                        sec,
+                        3600
+                    )
+
+                    minutes = rem // 60
+
+
+                    dur = (
+                        f"{hours}ч {minutes}мин"
+                    )
+
+
+                    for ch in streamer.get(
+                        "channels",
+                        []
+                    ):
+
+                        if not ch.get(
+                            "notify_end",
+                            True
+                        ):
+                            continue
+
+
+                        try:
+
+                            await bot.send_message(
+
+                                ch["chat_id"],
+
+                                messages.get(
+                                    "end",
+                                    ""
+                                ).format(
+
+                                    name=name,
+
+                                    title=st["title"],
+
+                                    duration=dur,
+
+                                    peak_viewers=st["peak_viewers"],
+
+                                    url=url
+
+                                ),
+
+                                parse_mode="HTML"
+
                             )
 
-                            -
+                        except Exception as e:
 
-                            st["start_time"]
-
-                        )
-
-
-
-                        sec = int(
-                            duration.total_seconds()
-                        )
+                            logger.error(
+                                f"END SEND ERROR {name}: {e}"
+                            )
 
 
-
-                        hours, rem = divmod(
-                            sec,
-                            3600
-                        )
-
-
-                        minutes = rem // 60
+                    st["online"] = False
+                    st["title"] = ""
+                    st["game"] = ""
+                    st["started_at"] = ""
+                    st["start_time"] = None
+                    st["peak_viewers"] = 0
 
 
+            # после первого полного прохода
+            # включаем уведомления
 
-                        dur = (
-                            f"{hours}ч {minutes}мин"
-                        )
+            if not initialized:
 
+                initialized = True
 
-
-                        for ch in streamer.get(
-                            "channels",
-                            []
-                        ):
-
-
-                            if ch.get(
-                                "notify_end",
-                                True
-                            ):
-
-
-                                try:
-
-                                    await bot.send_message(
-
-                                        ch["chat_id"],
-
-
-                                        messages.get(
-                                            "end",
-                                            ""
-                                        ).format(
-
-                                            name=name,
-
-                                            title=st["title"],
-
-                                            duration=dur,
-
-                                            peak_viewers=st["peak_viewers"],
-
-                                            url=url
-
-                                        ),
-
-
-                                        parse_mode="HTML"
-
-                                    )
-
-
-                                except Exception as e:
-
-                                    logger.error(
-                                        f"END SEND ERROR {name}: {e}"
-                                    )
-
-
-
-                        st["online"] = False
-
-                        st["title"] = ""
-
-                        st["game"] = ""
-
-                        st["started_at"] = ""
-
-                        st["start_time"] = None
-
-                        st["peak_viewers"] = 0
-
-
+                logger.info(
+                    "TWITCH MONITOR INITIALIZED"
+                )
 
 
         except Exception as e:
-
 
             logger.exception(
                 f"MONITOR ERROR: {e}"
             )
 
 
-
         await asyncio.sleep(
             interval
         )
-
-
 
 
 
@@ -626,22 +430,18 @@ async def monitor(
 
 def register_twitch_api_handler(dp):
 
-
     @dp.message(Command("twitchapi"))
     async def twitch_api_test(
         message: types.Message
     ):
 
-
         try:
-
 
             result = get_streamers_status(
                 [
                     "ninja"
                 ]
             )
-
 
 
             await message.answer(
@@ -652,9 +452,7 @@ def register_twitch_api_handler(dp):
             )
 
 
-
         except Exception as e:
-
 
             await message.answer(
                 f"❌ ERROR: {e}"
