@@ -1225,3 +1225,68 @@ def get_streamers_status(
     return twitch.get_streams(
         names
     )
+    
+# ============================================================
+# STREAM START DETECTOR
+# ============================================================
+
+def is_new_stream(
+    name,
+    started_at
+):
+
+    if not started_at:
+
+        return False
+
+
+    name = name.lower()
+
+
+    cache = load_cache()
+
+
+    streamer = cache.get(
+        name,
+        {}
+    )
+
+
+    old_start = streamer.get(
+        "last_notified_start"
+    )
+
+
+    # первый запуск бота
+    # если стример уже онлайн - НЕ уведомляем
+
+    if old_start is None:
+
+        streamer["last_notified_start"] = started_at
+
+        cache[name] = streamer
+
+        save_cache(cache)
+
+        return False
+
+
+
+    # тот же самый стрим
+
+    if old_start == started_at:
+
+        return False
+
+
+
+    # новый стрим
+
+    streamer["last_notified_start"] = started_at
+
+    cache[name] = streamer
+
+    save_cache(cache)
+
+
+    return True
