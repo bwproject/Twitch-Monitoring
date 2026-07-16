@@ -14,12 +14,14 @@ from aiogram.filters import Command
 try:
     from bot3.twitch_api import (
         get_streamer_status,
-        get_streamers_status
+        get_streamers_status,
+        is_new_stream
     )
 except ImportError:
     from twitch_api import (
         get_streamer_status,
-        get_streamers_status
+        get_streamers_status,
+        is_new_stream
     )
 
 
