@@ -1,4 +1,5 @@
 # twitch_api.py
+# bot3 Twitch Monitor
 
 import os
 import json
@@ -24,6 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent
 
 CACHE_FILE = BASE_DIR / "twitch_cache.json"
 
+STREAMERS_FILE = BASE_DIR / "streamers.json"
+
 
 # ============================================================
 # SINGLETON
@@ -36,6 +39,7 @@ _twitch = None
 # ============================================================
 # CACHE
 # ============================================================
+
 
 def load_cache():
 
@@ -98,103 +102,236 @@ def save_cache(data):
 
 
 # ============================================================
-# STREAMER FILE SAVE
+# STREAMERS LIST
 # ============================================================
 
-def save_streamer_data(
-    name,
-    data
-):
+
+def load_streamer_names():
+
+    if not STREAMERS_FILE.exists():
+
+        return []
+
 
     try:
 
-        file = BASE_DIR / f"{name}.json"
-
-
-        old = {}
-
-
-        if file.exists():
-
-            try:
-
-                with file.open(
-                    "r",
-                    encoding="utf-8"
-                ) as f:
-
-                    old = json.load(f)
-
-            except Exception:
-
-                old = {}
-
-
-
-        if not isinstance(
-            old,
-            dict
-        ):
-
-            old = {}
-
-
-
-        old["twitch_data"] = data
-
-
-        old["old_title"] = data.get(
-            "title",
-            ""
-        )
-
-
-        old["old_game"] = data.get(
-            "game_name",
-            ""
-        )
-
-
-        old["peak_viewers"] = data.get(
-            "viewer_count",
-            0
-        )
-
-
-        old["last_update"] = time.time()
-
-
-
-        with file.open(
-            "w",
+        with STREAMERS_FILE.open(
+            "r",
             encoding="utf-8"
         ) as f:
 
-            json.dump(
-                old,
-                f,
-                ensure_ascii=False,
-                indent=2
-            )
+            data = json.load(f)
 
 
-        logger.info(
-            f"STREAMER DATA SAVED: {name}.json"
-        )
+        result = []
+
+
+        if isinstance(data, list):
+
+            for item in data:
+
+                if isinstance(item, dict):
+
+                    name = (
+                        item.get("name")
+                        or
+                        item.get("login")
+                        or
+                        item.get("username")
+                    )
+
+
+                    if name:
+
+                        result.append(
+                            name.lower()
+                        )
+
+
+        return result
 
 
     except Exception as e:
 
-        logger.exception(
-            f"SAVE STREAMER DATA ERROR {name}: {e}"
+        logger.error(
+            f"STREAMERS LOAD ERROR: {e}"
         )
 
 
+    return []
+
+
 
 
 # ============================================================
-# TWITCH API
+# NORMALIZE TWITCH DATA
 # ============================================================
+
+
+def normalize_stream(data):
+
+
+    if not data:
+
+        return {
+
+            "online": False,
+
+            "viewer_count": 0
+
+        }
+
+
+
+    return {
+
+        "user_login":
+            data.get(
+                "user_login",
+                ""
+            ),
+
+
+        "user_name":
+            data.get(
+                "user_name",
+                ""
+            ),
+
+
+        "title":
+            data.get(
+                "title",
+                ""
+            ),
+
+
+        "game_name":
+            data.get(
+                "game_name",
+                ""
+            ),
+
+
+        "viewer_count":
+            data.get(
+                "viewer_count",
+                0
+            ),
+
+
+        "started_at":
+            data.get(
+                "started_at",
+                ""
+            ),
+
+
+        "thumbnail_url":
+            data.get(
+                "thumbnail_url",
+                ""
+            ),
+
+
+        "online":
+            True,
+
+
+        "offline":
+            False,
+
+
+        "last_online":
+            time.time()
+
+    }
+
+
+
+
+# ============================================================
+# CACHE UPDATE
+# ============================================================
+
+
+def update_cache_online(
+    name,
+    stream
+):
+
+
+    cache = load_cache()
+
+
+    old = cache.get(
+        name,
+        {}
+    )
+
+
+    current_viewers = stream.get(
+        "viewer_count",
+        0
+    )
+
+
+    old_peak = old.get(
+        "peak_viewers",
+        0
+    )
+
+
+    stream["peak_viewers"] = max(
+        old_peak,
+        current_viewers
+    )
+
+
+    cache[name] = stream
+
+
+    save_cache(
+        cache
+    )
+
+
+    return stream
+
+
+
+
+def get_cache_stream(name):
+
+
+    cache = load_cache()
+
+
+    data = cache.get(
+        name.lower()
+    )
+
+
+    if not data:
+
+        return None
+
+
+    result = data.copy()
+
+
+    result["online"] = False
+
+    result["offline"] = True
+
+    result["viewer_count"] = 0
+
+
+    return result
+# ============================================================
+# TWITCH API CLASS
+# ============================================================
+
 
 class TwitchAPI:
 
@@ -207,28 +344,20 @@ class TwitchAPI:
 
 
         self.client_id = (
-
             client_id
-
             or
-
             os.getenv(
                 "TWITCH_CLIENT_ID"
             )
-
         )
 
 
         self.client_secret = (
-
             client_secret
-
             or
-
             os.getenv(
                 "TWITCH_CLIENT_SECRET"
             )
-
         )
 
 
@@ -246,6 +375,7 @@ class TwitchAPI:
     # TOKEN
     # ========================================================
 
+
     def get_token(self):
 
 
@@ -256,14 +386,13 @@ class TwitchAPI:
                 "TWITCH CLIENT DATA MISSING"
             )
 
-
             return None
 
 
 
         try:
 
-            resp = requests.post(
+            response = requests.post(
 
                 "https://id.twitch.tv/oauth2/token",
 
@@ -287,31 +416,28 @@ class TwitchAPI:
 
         except Exception as e:
 
-
             logger.exception(
                 f"TOKEN ERROR: {e}"
             )
 
-
             return None
 
 
 
 
-        if resp.status_code != 200:
+        if response.status_code != 200:
 
 
             logger.error(
-                resp.text
+                response.text
             )
-
 
             return None
 
 
 
-        data = resp.json()
 
+        data = response.json()
 
 
         self.token = data.get(
@@ -352,7 +478,9 @@ class TwitchAPI:
 
             or
 
-            time.time() >= self.token_expiry - 60
+            time.time()
+            >=
+            self.token_expiry - 60
 
         ):
 
@@ -362,32 +490,17 @@ class TwitchAPI:
 
 
     # ========================================================
-    # STREAMS
+    # HEADERS
     # ========================================================
 
-    def get_streams(
-        self,
-        streamer_names
-    ):
 
-
-        if not streamer_names:
-
-            return {}
-
+    def headers(self):
 
 
         self.ensure_token()
 
 
-
-        if not self.token:
-
-            return {}
-
-
-
-        headers = {
+        return {
 
             "Client-ID":
                 self.client_id,
@@ -400,26 +513,46 @@ class TwitchAPI:
 
 
 
-        params = [
+    # ========================================================
+    # STREAMS
+    # ========================================================
 
-            (
-                "user_login",
-                name.lower()
-            )
 
-            for name in streamer_names
+    def fetch_streams(
+        self,
+        names
+    ):
 
-        ]
+
+        if not names:
+
+            return {}
 
 
 
         try:
 
-            resp = requests.get(
+            params = []
+
+
+            for name in names:
+
+                params.append(
+
+                    (
+                        "user_login",
+                        name.lower()
+                    )
+
+                )
+
+
+
+            response = requests.get(
 
                 "https://api.twitch.tv/helix/streams",
 
-                headers=headers,
+                headers=self.headers(),
 
                 params=params,
 
@@ -430,49 +563,43 @@ class TwitchAPI:
 
         except Exception as e:
 
+
             logger.exception(
-                f"STREAM ERROR: {e}"
+                f"STREAM REQUEST ERROR: {e}"
             )
+
 
             return {}
 
 
 
 
-        if resp.status_code != 200:
+        if response.status_code != 200:
 
 
             logger.error(
-                resp.text
+                response.text
             )
 
 
             return {}
 
 
-
-
-        streams = resp.json().get(
-            "data",
-            []
-        )
-
-
-
-        cache = load_cache()
 
 
         result = {}
 
 
 
-        for stream in streams:
+        for item in response.json().get(
+            "data",
+            []
+        ):
 
 
-            login = stream.get(
+            login = item.get(
                 "user_login"
             )
-
 
 
             if not login:
@@ -485,33 +612,9 @@ class TwitchAPI:
 
 
 
-            result[login] = stream
-
-
-
-            cache[login] = stream
-
-
-
-            # сохраняем последний стрим
-
-            save_streamer_data(
-                login,
-                stream
+            result[login] = normalize_stream(
+                item
             )
-
-
-
-
-        save_cache(
-            cache
-        )
-
-
-
-        logger.info(
-            f"ONLINE USERS: {list(result.keys())}"
-        )
 
 
 
@@ -521,264 +624,45 @@ class TwitchAPI:
 
 
     # ========================================================
-    # SINGLE STREAM
-    # ========================================================
-
-    def get_stream(
-        self,
-        streamer_name
-    ):
-
-
-        name = streamer_name.lower()
-
-
-
-        online = self.get_streams(
-            [
-                name
-            ]
-        )
-
-
-
-        if name in online:
-
-            return online[name]
-
-
-
-
-        # ====================================================
-        # OFFLINE -> streamer.json
-        # ====================================================
-
-        streamer_file = BASE_DIR / f"{name}.json"
-
-
-
-        if streamer_file.exists():
-
-
-            try:
-
-                with streamer_file.open(
-                    "r",
-                    encoding="utf-8"
-                ) as f:
-
-                    data = json.load(f)
-
-
-
-                twitch_data = data.get(
-                    "twitch_data"
-                )
-
-
-
-                if twitch_data:
-
-
-                    result = twitch_data.copy()
-
-
-                    result["viewer_count"] = 0
-
-
-                    result["offline"] = True
-
-
-
-                    logger.info(
-                        f"USE STREAMER FILE: {name}"
-                    )
-
-
-                    return result
-
-
-
-            except Exception as e:
-
-                logger.error(
-                    f"STREAMER FILE ERROR {name}: {e}"
-                )
-
-
-
-
-
-        # ====================================================
-        # OFFLINE -> CACHE
-        # ====================================================
-
-        cache = load_cache()
-
-
-
-        if name in cache:
-
-
-            data = cache[name].copy()
-
-
-            data["viewer_count"] = 0
-
-
-            data["offline"] = True
-
-
-
-            logger.info(
-                f"USE CACHE: {name}"
-            )
-
-
-
-            return data
-
-
-
-
-
-        # ====================================================
-        # USER DATA
-        # ====================================================
-
-
-        users = self.get_users(
-            [
-                name
-            ]
-        )
-
-
-
-        if name in users:
-
-
-            user = users[name]
-
-
-
-            return {
-
-                "user_login":
-                    name,
-
-                "user_name":
-                    user.get(
-                        "display_name",
-                        name
-                    ),
-
-                "title":
-                    "",
-
-                "game_name":
-                    "",
-
-                "viewer_count":
-                    0,
-
-                "started_at":
-                    "",
-
-                "thumbnail_url":
-                    user.get(
-                        "profile_image_url",
-                        ""
-                    ),
-
-                "offline":
-                    True
-
-            }
-
-
-
-
-        return {
-
-            "user_login":
-                name,
-
-            "title":
-                "",
-
-            "game_name":
-                "",
-
-            "viewer_count":
-                0,
-
-            "offline":
-                True
-
-        }
-
-
-
-
-    # ========================================================
     # USERS
     # ========================================================
 
-    def get_users(
+
+    def fetch_users(
         self,
-        usernames
+        names
     ):
 
 
-        if not usernames:
+        if not names:
 
             return {}
-
-
-
-        self.ensure_token()
-
-
-
-        if not self.token:
-
-            return {}
-
-
-
-        headers = {
-
-            "Client-ID":
-                self.client_id,
-
-            "Authorization":
-                f"Bearer {self.token}"
-
-        }
-
-
-
-        params = [
-
-            (
-                "login",
-                name.lower()
-            )
-
-            for name in usernames
-
-        ]
 
 
 
         try:
 
-            resp = requests.get(
+            params = []
+
+
+            for name in names:
+
+                params.append(
+
+                    (
+                        "login",
+                        name.lower()
+                    )
+
+                )
+
+
+
+            response = requests.get(
 
                 "https://api.twitch.tv/helix/users",
 
-                headers=headers,
+                headers=self.headers(),
 
                 params=params,
 
@@ -789,33 +673,407 @@ class TwitchAPI:
 
         except Exception as e:
 
+
             logger.exception(
-                f"USERS ERROR: {e}"
+                f"USERS REQUEST ERROR: {e}"
             )
+
 
             return {}
 
 
 
 
-        if resp.status_code != 200:
+        if response.status_code != 200:
+
+
+            logger.error(
+                response.text
+            )
+
 
             return {}
 
 
 
-        return {
 
-            user["login"].lower():
+        users = {}
 
-            user
 
-            for user in resp.json().get(
-                "data",
-                []
+
+        for user in response.json().get(
+            "data",
+            []
+        ):
+
+
+            login = user.get(
+                "login"
             )
 
-        }
+
+            if login:
+
+                users[
+                    login.lower()
+                ] = user
+
+
+
+        return users
+# ============================================================
+# CACHE BUILDER
+# ============================================================
+
+
+    def build_initial_cache(self):
+
+
+        names = load_streamer_names()
+
+
+        if not names:
+
+            logger.warning(
+                "NO STREAMERS FOUND"
+            )
+
+            return {}
+
+
+
+        logger.info(
+            "BUILD INITIAL TWITCH CACHE"
+        )
+
+
+        cache = load_cache()
+
+
+
+        # получаем профили пользователей
+
+        users = self.fetch_users(
+            names
+        )
+
+
+
+        for name in names:
+
+
+            user = users.get(
+                name
+            )
+
+
+            if user:
+
+
+                cache[name] = {
+
+                    "user_login":
+                        name,
+
+
+                    "user_name":
+                        user.get(
+                            "display_name",
+                            name
+                        ),
+
+
+                    "profile_image_url":
+                        user.get(
+                            "profile_image_url",
+                            ""
+                        ),
+
+
+                    "offline_image_url":
+                        user.get(
+                            "offline_image_url",
+                            ""
+                        ),
+
+
+                    "title":
+                        "",
+
+
+                    "game_name":
+                        "",
+
+
+                    "viewer_count":
+                        0,
+
+
+                    "peak_viewers":
+                        0,
+
+
+                    "started_at":
+                        "",
+
+
+                    "online":
+                        False,
+
+
+                    "offline":
+                        True,
+
+
+                    "last_update":
+                        time.time()
+
+                }
+
+
+
+
+        # если кто-то сейчас онлайн
+
+        online = self.fetch_streams(
+            names
+        )
+
+
+
+        for name, stream in online.items():
+
+            cache[name] = stream
+
+
+
+        save_cache(
+            cache
+        )
+
+
+        logger.info(
+            "INITIAL CACHE CREATED"
+        )
+
+
+        return cache
+
+
+
+
+
+    # ========================================================
+    # REFRESH
+    # ========================================================
+
+
+    def refresh(
+        self,
+        names=None
+    ):
+
+
+        if not names:
+
+            names = load_streamer_names()
+
+
+
+        if not names:
+
+            return {}
+
+
+
+        cache = load_cache()
+
+
+
+        if not cache:
+
+
+            cache = self.build_initial_cache()
+
+
+
+
+        online = self.fetch_streams(
+            names
+        )
+
+
+
+        result = {}
+
+
+
+        for name in names:
+
+
+            name = name.lower()
+
+
+
+            if name in online:
+
+
+                # ==========================
+                # ONLINE
+                # ==========================
+
+
+                stream = online[name]
+
+
+                old = cache.get(
+                    name,
+                    {}
+                )
+
+
+                stream["peak_viewers"] = max(
+
+                    old.get(
+                        "peak_viewers",
+                        0
+                    ),
+
+                    stream.get(
+                        "viewer_count",
+                        0
+                    )
+
+                )
+
+
+                cache[name] = stream
+
+
+                result[name] = stream
+
+
+
+
+            else:
+
+
+                # ==========================
+                # OFFLINE
+                # ==========================
+
+
+                old = cache.get(
+                    name
+                )
+
+
+                if old:
+
+
+                    offline = old.copy()
+
+
+                    offline["online"] = False
+
+                    offline["offline"] = True
+
+                    offline["viewer_count"] = 0
+
+
+                    result[name] = offline
+
+
+                else:
+
+
+                    result[name] = {
+
+                        "user_login":
+                            name,
+
+                        "online":
+                            False,
+
+                        "offline":
+                            True,
+
+                        "viewer_count":
+                            0
+
+                    }
+
+
+
+        save_cache(
+            cache
+        )
+
+
+        return result
+
+
+
+
+
+    # ========================================================
+    # SINGLE STREAM
+    # ========================================================
+
+
+    def get_stream(
+        self,
+        name
+    ):
+
+
+        name = name.lower()
+
+
+        data = self.refresh(
+            [
+                name
+            ]
+        )
+
+
+        return data.get(
+            name,
+            {
+
+                "user_login":
+                    name,
+
+                "online":
+                    False,
+
+                "offline":
+                    True,
+
+                "viewer_count":
+                    0
+
+            }
+        )
+
+
+
+
+
+    # ========================================================
+    # MULTI STREAM
+    # ========================================================
+
+
+    def get_streams(
+        self,
+        names
+    ):
+
+
+        return self.refresh(
+            names
+        )
 
 
 
@@ -825,10 +1083,12 @@ class TwitchAPI:
 # SINGLETON
 # ============================================================
 
+
 def get_twitch_api(
     client_id=None,
     client_secret=None
 ):
+
 
     global _twitch
 
@@ -887,30 +1147,38 @@ def get_twitch_api(
 
 
     return _twitch
-    
+
+
+
+
+
 # ============================================================
-# PUBLIC ACCESS API
+# PUBLIC FUNCTIONS
 # ============================================================
 
-def get_streamer_status(name):
-    """
-    Единая точка получения данных одного стримера
-    Twitch API -> cache -> name.json -> offline
-    """
+
+def get_streamer_status(
+    name
+):
+
 
     twitch = get_twitch_api()
+
 
     return twitch.get_stream(
         name
     )
 
 
-def get_streamers_status(names):
-    """
-    Единая точка получения списка стримеров
-    """
+
+
+def get_streamers_status(
+    names
+):
+
 
     twitch = get_twitch_api()
+
 
     return twitch.get_streams(
         names
