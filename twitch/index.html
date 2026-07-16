@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+
+<title>Twitch Admin</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+
+body {
+    font-family: Arial, sans-serif;
+    padding:15px;
+    background:var(--tg-theme-bg-color);
+    color:var(--tg-theme-text-color);
+}
+
+select,
+textarea,
+button {
+    width:100%;
+    margin-top:10px;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #555;
+    background:var(--tg-theme-secondary-bg-color);
+    color:var(--tg-theme-text-color);
+}
+
+textarea {
+    min-height:130px;
+    resize:vertical;
+}
+
+button {
+    background:#2481cc;
+    color:white;
+    border:none;
+}
+
+h2,
+h3 {
+    text-align:center;
+}
+
+label {
+    display:block;
+    margin-top:8px;
+}
+
+#current {
+    text-align:center;
+    opacity:0.7;
+    margin-bottom:10px;
+}
+
+#error {
+    color:red;
+    text-align:center;
+}
+
+.message-block {
+    margin-top:20px;
+}
+
+.preview-box {
+    border:1px solid #555;
+    border-radius:10px;
+    padding:15px;
+    margin-top:10px;
+    min-height:70px;
+    background:var(--tg-theme-secondary-bg-color);
+    white-space:normal;
+    overflow-wrap:break-word;
+}
+
+.hints {
+    margin-top:8px;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #444;
+    font-size:13px;
+    opacity:0.85;
+    line-height:1.5;
+}
+
+.channel {
+    border:1px solid #555;
+    border-radius:10px;
+    padding:10px;
+    margin-top:15px;
+}
+
+hr {
+    margin-top:20px;
+    opacity:0.3;
+}
+
+.tag {
+    display:inline-block;
+    padding:3px 6px;
+    margin:2px;
+    border-radius:5px;
+    background:#333;
+    color:white;
+    font-size:12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h2>📺 Twitch Manager</h2>
+
+<div id="error"></div>
+
+<div id="current"></div>
+
+<select id="streamers"></select>
+
+<h3>💬 Messages</h3>
+
+<div class="message-block">
+
+<b>🟢 START</b>
+
+<div id="preview_start" class="preview-box"></div>
+
+<textarea id="start" placeholder="START message"></textarea>
+
+<div class="hints">
+
+<b>Переменные:</b><br>
+
+<span class="tag">{name}</span> Имя стримера<br>
+<span class="tag">{url}</span> Ссылка Twitch<br>
+<span class="tag">{game}</span> Текущая категория<br>
+<span class="tag">{title}</span> Название стрима
+
+<br><br>
+
+<b>HTML Telegram:</b><br>
+
+&lt;b&gt;текст&lt;/b&gt; — <b>жирный текст</b><br>
+&lt;i&gt;текст&lt;/i&gt; — <i>курсив</i><br>
+&lt;u&gt;текст&lt;/u&gt; — <u>подчёркивание</u><br>
+&lt;s&gt;текст&lt;/s&gt; — <s>зачёркивание</s><br>
+&lt;a href="URL"&gt;текст&lt;/a&gt; — ссылка
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="message-block">
+
+<b>📝 TITLE CHANGE</b>
+
+<div id="preview_title" class="preview-box"></div>
+
+<textarea id="title_change" placeholder="TITLE CHANGE message"></textarea>
+
+<div class="hints">
+
+<b>Переменные:</b><br>
+
+<span class="tag">{name}</span> Имя стримера<br>
+<span class="tag">{url}</span> Ссылка Twitch<br>
+<span class="tag">{old_title}</span> Старое название<br>
+<span class="tag">{title}</span> Новое название
+
+</div>
+
+</div>
+
+<hr>
+<div class="message-block">
+
+<b>🎮 GAME CHANGE</b>
+
+<div id="preview_game" class="preview-box"></div>
+
+<textarea id="game_change" placeholder="GAME CHANGE message"></textarea>
+
+<div class="hints">
+
+<b>Переменные:</b><br>
+
+<span class="tag">{name}</span> Имя стримера<br>
+<span class="tag">{url}</span> Ссылка Twitch<br>
+<span class="tag">{old_game}</span> Старая категория<br>
+<span class="tag">{game}</span> Новая категория
+
+</div>
+
+</div>
+
+<hr>
+
+<div class="message-block">
+
+<b>🔴 END</b>
+
+<div id="preview_end" class="preview-box"></div>
+
+<textarea id="end" placeholder="END message"></textarea>
+
+<div class="hints">
+
+<b>Переменные:</b><br>
+
+<span class="tag">{name}</span> Имя стримера<br>
+<span class="tag">{url}</span> Ссылка Twitch<br>
+<span class="tag">{duration}</span> Длительность стрима<br>
+<span class="tag">{peak_viewers}</span> Максимум зрителей
+
+</div>
+
+</div>
+
+
+<h3>👁 Настройки</h3>
+
+<label>
+<input id="preview" type="checkbox">
+Показывать предпросмотр
+</label>
+
+
+<h3>🔔 Channels Notify</h3>
+
+<div id="channels"></div>
+
+
+<button onclick="save()">
+💾 SAVE
+</button>
+
+
+<button onclick="closeApp()">
+❌ CLOSE
+</button>
+
+
+
+<script>
+
+const tg = window.Telegram.WebApp;
+
+tg.ready();
+tg.expand();
+
+
+if(!tg.initData){
+
+document.body.innerHTML = `
+<h2>
+❌ Откройте через Telegram
+</h2>
+`;
+
+throw new Error(
+"Telegram WebApp only"
+);
+
+}
+
+
+
+const API =
+"https://webapp.projectbw.ru/api/twitch";
+
+
+let current = "";
+
+let currentData = {};
+
+let previewData = {};
+
+
+
+const fields = {
+
+start:
+document.getElementById("start"),
+
+title_change:
+document.getElementById("title_change"),
+
+game_change:
+document.getElementById("game_change"),
+
+end:
+document.getElementById("end")
+
+};
+
+
+
+const previews = {
+
+start:
+document.getElementById("preview_start"),
+
+title_change:
+document.getElementById("preview_title"),
+
+game_change:
+document.getElementById("preview_game"),
+
+end:
+document.getElementById("preview_end")
+
+};
+
+
+
+const channels =
+document.getElementById("channels");
+
+
+const preview =
+document.getElementById("preview");
+
+
+
+// =====================================
+// LOAD STREAMERS
+// =====================================
+
+async function loadList(){
+
+try{
+
+let r =
+await fetch(
+API + "/streamers"
+);
+
+
+let data =
+await r.json();
+
+
+let select =
+document.getElementById(
+"streamers"
+);
+
+
+select.innerHTML = "";
+
+
+data.forEach(x=>{
+
+let option =
+document.createElement(
+"option"
+);
+
+
+option.value =
+x.name;
+
+
+option.textContent =
+x.name +
+(
+x.file
+?
+" ✅"
+:
+" 📄"
+);
+
+
+select.appendChild(
+option
+);
+
+
+});
+
+
+select.onchange = () => {
+
+load();
+
+};
+
+
+if(data.length){
+
+select.value =
+data[0].name;
+
+load();
+
+}
+
+
+}
+catch(e){
+
+error(
+"Ошибка списка: "+e
+);
+
+}
+
+}
+
+
+
+// =====================================
+// LOAD STREAMER
+// =====================================
+
+async function load(){
+
+try{
+
+
+current =
+document.getElementById(
+"streamers"
+).value;
+
+
+document.getElementById(
+"current"
+).innerText =
+"Редактирование: "+current;
+
+
+
+let r =
+await fetch(
+API+
+"/streamer/"+
+encodeURIComponent(current)
+);
+
+
+
+currentData =
+await r.json();
+
+
+let d =
+currentData;
+
+
+fields.start.value =
+d.messages?.start || "";
+
+
+fields.title_change.value =
+d.messages?.title_change || "";
+
+
+fields.game_change.value =
+d.messages?.game_change || "";
+
+
+fields.end.value =
+d.messages?.end || "";
+
+
+preview.checked =
+d.preview !== false;
+
+
+loadChannels(
+d.channels || []
+);
+
+
+await loadPreviewData();
+
+
+}
+catch(e){
+
+error(
+"Ошибка загрузки: "+e
+);
+
+}
+
+}
+// =====================================
+// PREVIEW DATA
+// =====================================
+
+async function loadPreviewData(){
+
+if(!current)
+return;
+
+
+try{
+
+let r =
+await fetch(
+API+
+"/preview/"+
+encodeURIComponent(current)
+);
+
+
+previewData =
+await r.json();
+
+
+updatePreview();
+
+
+}
+catch(e){
+
+console.log(
+"Preview error",
+e
+);
+
+}
+
+}
+
+
+
+// =====================================
+// REPLACE VARIABLES
+// =====================================
+
+function replaceTags(text){
+
+if(!text)
+return "";
+
+
+let result = text;
+
+
+Object.keys(previewData)
+.forEach(key=>{
+
+result =
+result.replaceAll(
+"{"+key+"}",
+previewData[key] ?? ""
+);
+
+});
+
+
+return result;
+
+}
+
+
+
+// =====================================
+// LIVE PREVIEW
+// =====================================
+
+function updatePreview(){
+
+Object.keys(fields)
+.forEach(key=>{
+
+
+let html =
+replaceTags(
+fields[key].value
+);
+
+
+previews[key].innerHTML =
+html.replaceAll(
+"\n",
+"<br>"
+);
+
+
+});
+
+}
+
+
+
+
+Object.values(fields)
+.forEach(field=>{
+
+field.addEventListener(
+"input",
+updatePreview
+);
+
+});
+
+
+
+// =====================================
+// CHANNELS
+// =====================================
+
+function loadChannels(list){
+
+channels.innerHTML="";
+
+
+list.forEach((c,i)=>{
+
+
+let div =
+document.createElement(
+"div"
+);
+
+
+div.className =
+"channel";
+
+
+div.innerHTML = `
+
+
+<b>
+💬 Chat ${c.chat_id}
+</b>
+
+
+<label>
+
+<input
+type="checkbox"
+data-index="${i}"
+data-field="notify_start"
+
+${c.notify_start !== false ? "checked":""}
+>
+
+START
+
+</label>
+
+
+<label>
+
+<input
+type="checkbox"
+data-index="${i}"
+data-field="notify_title_change"
+
+${c.notify_title_change !== false ? "checked":""}
+>
+
+TITLE
+
+</label>
+
+
+<label>
+
+<input
+type="checkbox"
+data-index="${i}"
+data-field="notify_game_change"
+
+${c.notify_game_change !== false ? "checked":""}
+>
+
+GAME
+
+</label>
+
+
+<label>
+
+<input
+type="checkbox"
+data-index="${i}"
+data-field="notify_end"
+
+${c.notify_end !== false ? "checked":""}
+>
+
+END
+
+</label>
+
+
+`;
+
+
+channels.appendChild(div);
+
+
+});
+
+
+}
+
+
+
+// =====================================
+// HTML CHECK
+// =====================================
+
+function checkHTML(text){
+
+let open =
+(text.match(/</g)||[])
+.length;
+
+
+let close =
+(text.match(/>/g)||[])
+.length;
+
+
+return open === close;
+
+}
+
+
+
+// =====================================
+// SAVE
+// =====================================
+
+async function save(){
+
+try{
+
+
+if(
+
+!checkHTML(fields.start.value) ||
+
+!checkHTML(fields.title_change.value) ||
+
+!checkHTML(fields.game_change.value) ||
+
+!checkHTML(fields.end.value)
+
+){
+
+
+tg.showAlert(
+"⚠ Проверь HTML теги"
+);
+
+
+return;
+
+}
+
+
+
+let d =
+currentData;
+
+
+
+if(!d.messages)
+
+d.messages = {};
+
+
+
+d.messages.start =
+fields.start.value;
+
+
+d.messages.title_change =
+fields.title_change.value;
+
+
+d.messages.game_change =
+fields.game_change.value;
+
+
+d.messages.end =
+fields.end.value;
+
+
+d.preview =
+preview.checked;
+
+
+
+document
+.querySelectorAll(
+"#channels input[type=checkbox]"
+)
+.forEach(el=>{
+
+
+let index =
+el.dataset.index;
+
+
+let field =
+el.dataset.field;
+
+
+if(d.channels[index]){
+
+d.channels[index][field] =
+el.checked;
+
+}
+
+
+});
+
+
+
+
+let response =
+await fetch(
+
+API+
+"/streamer/"+
+encodeURIComponent(current),
+
+{
+
+
+method:"POST",
+
+headers:{
+
+"Content-Type":
+"application/json"
+
+},
+
+
+body:
+
+JSON.stringify(d)
+
+}
+
+);
+
+
+
+let result =
+await response.json();
+
+
+
+if(result.ok){
+
+tg.showAlert(
+"Сохранено ✅"
+);
+
+}
+else{
+
+tg.showAlert(
+"Ошибка: "+
+result.error
+);
+
+}
+
+
+}
+catch(e){
+
+tg.showAlert(
+"Ошибка сохранения: "+e
+);
+
+}
+
+
+}
+
+
+
+// =====================================
+// ERROR
+// =====================================
+
+function error(text){
+
+document.getElementById(
+"error"
+).innerText =
+text;
+
+}
+
+
+
+// =====================================
+// CLOSE
+// =====================================
+
+function closeApp(){
+
+tg.close();
+
+}
+
+
+
+// =====================================
+// START
+// =====================================
+
+loadList();
+
+
+</script>
+
+</body>
+</html>
