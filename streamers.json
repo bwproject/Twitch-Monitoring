@@ -26,6 +26,34 @@
       "end": "🔴 <u><b><a href=\"{url}\">{name}</a></b></u> оффнул!\n🔴 Подруб длился: <b>{duration}</b>\n🔴 Зрителей: <b>{peak_viewers}</b>\n\n#{name} #twitch #offline"
     }
   },
+  
+  {
+    "name": "the_mr_mes109",
+    "tg_id": 353294360,
+    "preview": true,
+    "channels": [
+      {
+        "chat_id": "-1001883601703",
+        "notify_start": true,
+        "notify_title_change": false,
+        "notify_game_change": false,
+        "notify_end": true
+      },
+      {
+        "chat_id": "-4558073157",
+        "notify_start": true,
+        "notify_title_change": true,
+        "notify_game_change": true,
+        "notify_end": true
+      }
+    ],
+    "messages": {
+      "start": "🟢 <u><b><a href=\"{url}\">{name}</a></b></u> решил подрубить стрим!\n🟢 Категория: <b>{game}</b>.\n🟢 Название: <i>{title}</i>.\n\n#{name} #twitch #online",
+      "title_change": "Сменил название:\n<u><b><a href=\"{url}\">{name}</a></b></u>\nС \"<i>{old_title}</i>\" на \"<i>{title}</i>\"\n{url}",
+      "game_change": "Сменил категорию:\n<u><b><a href=\"{url}\">{name}</a></b></u>\nС \"<b>{old_game}</b>\" на \"<b>{game}</b>\"\n{url}",
+      "end": "🔴 <u><b><a href=\"{url}\">{name}</a></b></u> оффнул!\n🔴 Подруб длился: <b>{duration}</b>\n🔴 Зрителей: <b>{peak_viewers}</b>\n\n#{name} #twitch #offline"
+    }
+  },
   {
     "name": "streamsbyben",
     "tg_id": 436885831,
