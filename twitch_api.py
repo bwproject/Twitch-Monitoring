@@ -1,5 +1,4 @@
 # twitch_api.py
-# bot3 Twitch Monitor
 
 import os
 import json
@@ -39,7 +38,6 @@ _twitch = None
 # ============================================================
 # CACHE
 # ============================================================
-
 
 def load_cache():
 
@@ -105,7 +103,6 @@ def save_cache(data):
 # STREAMERS LIST
 # ============================================================
 
-
 def load_streamer_names():
 
     if not STREAMERS_FILE.exists():
@@ -130,14 +127,22 @@ def load_streamer_names():
 
             for item in data:
 
+
                 if isinstance(item, dict):
 
+
                     name = (
+
                         item.get("name")
+
                         or
+
                         item.get("login")
+
                         or
+
                         item.get("username")
+
                     )
 
 
@@ -164,9 +169,8 @@ def load_streamer_names():
 
 
 # ============================================================
-# NORMALIZE TWITCH DATA
+# NORMALIZE
 # ============================================================
-
 
 def normalize_stream(data):
 
@@ -184,6 +188,7 @@ def normalize_stream(data):
 
 
     return {
+
 
         "user_login":
             data.get(
@@ -234,32 +239,24 @@ def normalize_stream(data):
             ),
 
 
-        "online":
-            True,
+        "online": True,
 
 
-        "offline":
-            False,
+        "offline": False,
 
 
-        "last_online":
+        "last_update":
             time.time()
 
     }
-
-
-
-
 # ============================================================
 # CACHE UPDATE
 # ============================================================
-
 
 def update_cache_online(
     name,
     stream
 ):
-
 
     cache = load_cache()
 
@@ -301,8 +298,9 @@ def update_cache_online(
 
 
 
-def get_cache_stream(name):
-
+def get_cache_stream(
+    name
+):
 
     cache = load_cache()
 
@@ -317,6 +315,7 @@ def get_cache_stream(name):
         return None
 
 
+
     result = data.copy()
 
 
@@ -328,10 +327,13 @@ def get_cache_stream(name):
 
 
     return result
+
+
+
+
 # ============================================================
 # TWITCH API CLASS
 # ============================================================
-
 
 class TwitchAPI:
 
@@ -344,20 +346,28 @@ class TwitchAPI:
 
 
         self.client_id = (
+
             client_id
+
             or
+
             os.getenv(
                 "TWITCH_CLIENT_ID"
             )
+
         )
 
 
         self.client_secret = (
+
             client_secret
+
             or
+
             os.getenv(
                 "TWITCH_CLIENT_SECRET"
             )
+
         )
 
 
@@ -375,8 +385,9 @@ class TwitchAPI:
     # TOKEN
     # ========================================================
 
-
-    def get_token(self):
+    def get_token(
+        self
+    ):
 
 
         if not self.client_id or not self.client_secret:
@@ -386,7 +397,9 @@ class TwitchAPI:
                 "TWITCH CLIENT DATA MISSING"
             )
 
+
             return None
+
 
 
 
@@ -401,24 +414,30 @@ class TwitchAPI:
                     "client_id":
                         self.client_id,
 
+
                     "client_secret":
                         self.client_secret,
+
 
                     "grant_type":
                         "client_credentials"
 
                 },
 
+
                 timeout=10
 
             )
 
 
+
         except Exception as e:
+
 
             logger.exception(
                 f"TOKEN ERROR: {e}"
             )
+
 
             return None
 
@@ -432,12 +451,14 @@ class TwitchAPI:
                 response.text
             )
 
+
             return None
 
 
 
 
         data = response.json()
+
 
 
         self.token = data.get(
@@ -459,9 +480,11 @@ class TwitchAPI:
         )
 
 
+
         logger.info(
             "Twitch token получен"
         )
+
 
 
         return self.token
@@ -469,7 +492,9 @@ class TwitchAPI:
 
 
 
-    def ensure_token(self):
+    def ensure_token(
+        self
+    ):
 
 
         if (
@@ -493,19 +518,25 @@ class TwitchAPI:
     # HEADERS
     # ========================================================
 
-
-    def headers(self):
+    def headers(
+        self
+    ):
 
 
         self.ensure_token()
 
 
+
         return {
 
+
             "Client-ID":
+
                 self.client_id,
 
+
             "Authorization":
+
                 f"Bearer {self.token}"
 
         }
@@ -516,7 +547,6 @@ class TwitchAPI:
     # ========================================================
     # STREAMS
     # ========================================================
-
 
     def fetch_streams(
         self,
@@ -532,10 +562,12 @@ class TwitchAPI:
 
         try:
 
+
             params = []
 
 
             for name in names:
+
 
                 params.append(
 
@@ -545,6 +577,7 @@ class TwitchAPI:
                     )
 
                 )
+
 
 
 
@@ -559,6 +592,7 @@ class TwitchAPI:
                 timeout=10
 
             )
+
 
 
         except Exception as e:
@@ -627,7 +661,6 @@ class TwitchAPI:
     # USERS
     # ========================================================
 
-
     def fetch_users(
         self,
         names
@@ -642,10 +675,13 @@ class TwitchAPI:
 
         try:
 
+
             params = []
 
 
+
             for name in names:
+
 
                 params.append(
 
@@ -671,6 +707,7 @@ class TwitchAPI:
             )
 
 
+
         except Exception as e:
 
 
@@ -680,10 +717,6 @@ class TwitchAPI:
 
 
             return {}
-
-
-
-
         if response.status_code != 200:
 
 
@@ -714,6 +747,7 @@ class TwitchAPI:
 
             if login:
 
+
                 users[
                     login.lower()
                 ] = user
@@ -721,12 +755,18 @@ class TwitchAPI:
 
 
         return users
-# ============================================================
-# CACHE BUILDER
-# ============================================================
 
 
-    def build_initial_cache(self):
+
+
+
+    # ========================================================
+    # CACHE BUILDER
+    # ========================================================
+
+    def build_initial_cache(
+        self
+    ):
 
 
         names = load_streamer_names()
@@ -734,9 +774,11 @@ class TwitchAPI:
 
         if not names:
 
+
             logger.warning(
                 "NO STREAMERS FOUND"
             )
+
 
             return {}
 
@@ -747,11 +789,10 @@ class TwitchAPI:
         )
 
 
+
         cache = load_cache()
 
 
-
-        # получаем профили пользователей
 
         users = self.fetch_users(
             names
@@ -771,6 +812,7 @@ class TwitchAPI:
 
 
                 cache[name] = {
+
 
                     "user_login":
                         name,
@@ -833,8 +875,6 @@ class TwitchAPI:
 
 
 
-        # если кто-то сейчас онлайн
-
         online = self.fetch_streams(
             names
         )
@@ -842,6 +882,7 @@ class TwitchAPI:
 
 
         for name, stream in online.items():
+
 
             cache[name] = stream
 
@@ -867,7 +908,6 @@ class TwitchAPI:
     # REFRESH
     # ========================================================
 
-
     def refresh(
         self,
         names=None
@@ -883,6 +923,16 @@ class TwitchAPI:
         if not names:
 
             return {}
+
+
+
+        names = [
+
+            x.lower()
+
+            for x in names
+
+        ]
 
 
 
@@ -906,21 +956,20 @@ class TwitchAPI:
 
         result = {}
 
+        changed = False
+
+
 
 
         for name in names:
 
 
-            name = name.lower()
 
-
+            # ==========================
+            # ONLINE
+            # ==========================
 
             if name in online:
-
-
-                # ==========================
-                # ONLINE
-                # ==========================
 
 
                 stream = online[name]
@@ -939,6 +988,7 @@ class TwitchAPI:
                         0
                     ),
 
+
                     stream.get(
                         "viewer_count",
                         0
@@ -947,25 +997,32 @@ class TwitchAPI:
                 )
 
 
+                stream["last_update"] = time.time()
+
+
+
                 cache[name] = stream
 
 
                 result[name] = stream
 
 
+                changed = True
 
+
+
+
+            # ==========================
+            # OFFLINE
+            # ==========================
 
             else:
-
-
-                # ==========================
-                # OFFLINE
-                # ==========================
 
 
                 old = cache.get(
                     name
                 )
+
 
 
                 if old:
@@ -981,7 +1038,9 @@ class TwitchAPI:
                     offline["viewer_count"] = 0
 
 
+
                     result[name] = offline
+
 
 
                 else:
@@ -989,14 +1048,18 @@ class TwitchAPI:
 
                     result[name] = {
 
+
                         "user_login":
                             name,
+
 
                         "online":
                             False,
 
+
                         "offline":
                             True,
+
 
                         "viewer_count":
                             0
@@ -1005,9 +1068,14 @@ class TwitchAPI:
 
 
 
-        save_cache(
-            cache
-        )
+
+        if changed:
+
+
+            save_cache(
+                cache
+            )
+
 
 
         return result
@@ -1020,7 +1088,6 @@ class TwitchAPI:
     # SINGLE STREAM
     # ========================================================
 
-
     def get_stream(
         self,
         name
@@ -1030,30 +1097,19 @@ class TwitchAPI:
         name = name.lower()
 
 
-        data = self.refresh(
+
+        result = self.refresh(
+
             [
                 name
             ]
+
         )
 
 
-        return data.get(
-            name,
-            {
 
-                "user_login":
-                    name,
-
-                "online":
-                    False,
-
-                "offline":
-                    True,
-
-                "viewer_count":
-                    0
-
-            }
+        return result.get(
+            name
         )
 
 
@@ -1063,7 +1119,6 @@ class TwitchAPI:
     # ========================================================
     # MULTI STREAM
     # ========================================================
-
 
     def get_streams(
         self,
@@ -1082,7 +1137,6 @@ class TwitchAPI:
 # ============================================================
 # SINGLETON
 # ============================================================
-
 
 def get_twitch_api(
     client_id=None,
@@ -1107,6 +1161,7 @@ def get_twitch_api(
     )
 
 
+
     real_client_secret = (
 
         client_secret
@@ -1121,19 +1176,7 @@ def get_twitch_api(
 
 
 
-    if (
-
-        _twitch is None
-
-        or
-
-        _twitch.client_id != real_client_id
-
-        or
-
-        _twitch.client_secret != real_client_secret
-
-    ):
+    if _twitch is None:
 
 
         _twitch = TwitchAPI(
@@ -1155,7 +1198,6 @@ def get_twitch_api(
 # ============================================================
 # PUBLIC FUNCTIONS
 # ============================================================
-
 
 def get_streamer_status(
     name
