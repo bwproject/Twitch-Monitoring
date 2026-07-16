@@ -1,10 +1,9 @@
-# bot3/webapp.py
+# webapp.py
 
 print("NEW WEBAPP LOADED UTF8")
 
 
 import json
-import os
 
 from pathlib import Path
 
@@ -13,12 +12,15 @@ from fastapi.responses import JSONResponse
 
 
 try:
-    from bot3.twitch_api import get_twitch_api
+    from bot3.twitch_api import (
+        get_streamer_status
+    )
 
 except ImportError:
 
-    from twitch_api import get_twitch_api
-
+    from twitch_api import (
+        get_streamer_status
+    )
 
 
 
@@ -220,7 +222,6 @@ def get_twitch_preview(name):
 
         "offline":True
 
-
     }
 
 
@@ -228,10 +229,7 @@ def get_twitch_preview(name):
     try:
 
 
-        twitch = get_twitch_api()
-
-
-        data = twitch.get_stream(
+        data = get_streamer_status(
             name
         )
 
@@ -272,9 +270,8 @@ def get_twitch_preview(name):
 
             result["offline"] = data.get(
                 "offline",
-                False
+                True
             )
-
 
 
 
@@ -289,12 +286,6 @@ def get_twitch_preview(name):
 
 
     return result
-
-
-
-
-
-
 # ============================================================
 # PREVIEW
 # ============================================================
@@ -493,9 +484,10 @@ async def streamers():
 
             {
 
-                "name":name,
+                "name": name,
 
                 "file":
+
                     get_streamer_file(name).exists()
 
             }
@@ -593,8 +585,8 @@ def save_streamer(data):
     "/streamer/{name}"
 )
 async def update_streamer(
-    name:str,
-    request:Request
+    name: str,
+    request: Request
 ):
 
 
@@ -614,8 +606,12 @@ async def update_streamer(
             return JSONResponse(
 
                 {
-                    "ok":False,
-                    "error":"JSON must object"
+
+                    "ok": False,
+
+                    "error":
+                        "JSON must object"
+
                 },
 
                 status_code=400
@@ -644,8 +640,12 @@ async def update_streamer(
         return JSONResponse(
 
             {
-                "ok":True,
-                "file":f"{name}.json"
+
+                "ok": True,
+
+                "file":
+                    f"{name}.json"
+
             }
 
         )
@@ -665,8 +665,12 @@ async def update_streamer(
         return JSONResponse(
 
             {
-                "ok":False,
-                "error":str(e)
+
+                "ok": False,
+
+                "error":
+                    str(e)
+
             },
 
             status_code=500
