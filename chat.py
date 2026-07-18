@@ -25,8 +25,22 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
 
-CONFIG_FILE = BASE_DIR / "chat_config.json"
-STREAMERS_FILE = BASE_DIR / "streamers.json"
+
+def _resolve(*names):
+
+    for base in (BASE_DIR, BASE_DIR.parent):
+
+        path = base.joinpath(*names)
+
+        if path.exists():
+
+            return path
+
+    return BASE_DIR.joinpath(*names)
+
+
+CONFIG_FILE = _resolve("chat_config.json")
+STREAMERS_FILE = _resolve("streamers.json")
 
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)

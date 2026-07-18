@@ -17,7 +17,29 @@ logger = logging.getLogger(
 
 BASE_DIR = Path(__file__).resolve().parent
 
-GLOBAL_COMMANDS_FILE = BASE_DIR / "global_commands.json"
+
+def _resolve_global_commands_file():
+
+    candidates = [
+
+        BASE_DIR / "global_commands.json",
+
+        BASE_DIR.parent / "global_commands.json",
+
+    ]
+
+    for path in candidates:
+
+        if path.exists():
+
+            return path
+
+    return candidates[0]
+
+
+def _global_commands_file():
+
+    return _resolve_global_commands_file()
 
 
 
@@ -117,7 +139,7 @@ def load_commands(
 
 
 
-    global_file = GLOBAL_COMMANDS_FILE
+    global_file = _global_commands_file()
 
 
     local_file = BASE_DIR / (
@@ -238,18 +260,14 @@ def get_all_commands(
 ):
 
 
-    return load_commands(
-        streamer
-    )
-    
-def get_all_commands(streamer):
-
     commands = load_commands(
         streamer
     )
 
+
     logger.info(
         f"CHECK COMMANDS {streamer}: {list(commands.keys())}"
     )
+
 
     return commands
