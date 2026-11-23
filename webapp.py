@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 from web_auth import authenticate, get_session_secret, load_users, save_users
-from runtime_status import snapshot as runtime_status_snapshot
+from runtime_status import snapshot as runtime_status_snapshot\nfrom runtime_config import save_integration_settings, integration_status
 try:
     from bot3.twitch_api import get_streamer_status, get_live_preview
 except ImportError:
@@ -137,7 +137,45 @@ async def admin_update_streamer(name:str,request:Request):
         save_streamer(data); return {"ok":True}
     except (ValueError,TypeError) as exc:
         return JSONResponse({"ok":False,"error":str(exc)},status_code=400)
-@router.get("/admin/api/users")
+
+@router.get("/admin/api/settings/integrations")
+async def admin_get_integration_settings(request: Request):
+    user = require_user(request)
+    if not user:
+        return JSONResponse({"error": "Требуется вход"}, status_code=401)
+    if user.get("role") != "admin":
+        return JSONResponse({"error": "Только администратор"}, status_code=403)
+    return {"configured": integration_status()}
+
+@router.put("/admin/api/settings/integrations")
+async def admin_update_integration_settings(request: Request):
+    user = require_user(request)
+    if not user:
+        return JSONResponse({"error": "Требуется вход"}, status_code=401)
+    if user.get("role") != "admin":
+        return JSONResponse({"error": "Только администратор"}, status_code=403)
+    try:
+        data = await request.json()
+        if not isinstance(data, dict):
+            raise ValueError("Ожидается JSON-объект")
+        values = data.get("values", {})
+        clear = data.get("clear", [])
+        if not isinstance(values, dict) or not isinstance(clear, list):
+            raise ValueError("Некорректный формат настроек")
+        allowed = {"telegram_token", "twitch_client_id", "twitch_client_secret", "twitch_bot_nick", "twitch_bot_id", "twitch_oauth"}
+        if any(key not in allowed for key in values) or any(key not in allowed for key in clear):
+            raise ValueError("Неизвестный параметр")
+        if any(not isinstance(value, str) for value in values.values()):
+            raise ValueError("Значения должны быть строками")
+        saved = save_integration_settings(values, clear)
+        return {"ok": True, "configured": {key: bool(saved.get(key) or os.getenv(env_name)) for key, env_name in {
+            "telegram_token": "TELEGRAM_TOKEN", "twitch_client_id": "TWITCH_CLIENT_ID",
+            "twitch_client_secret": "TWITCH_CLIENT_SECRET", "twitch_bot_nick": "TWITCH_BOT_NICK",
+            "twitch_bot_id": "TWITCH_BOT_ID", "twitch_oauth": "TWITCH_OAUTH"
+        }.items()}, "restart_required": True}
+    except (ValueError, TypeError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+\n@router.get("/admin/api/users")
 async def admin_list_users(request:Request):
     user=require_user(request)
     if not user: return JSONResponse({"error":"Требуется вход"},status_code=401)
