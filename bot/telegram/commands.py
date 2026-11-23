@@ -4,6 +4,7 @@ from aiogram import types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from os import getenv
+from subscriptions import subscribe, unsubscribe, list_subscriptions
 
 def register_command_handlers(dp):
 
@@ -39,6 +40,39 @@ def register_command_handlers(dp):
             parse_mode="HTML"
         )
 
+
+    @dp.message(Command("follow"))
+    async def cmd_follow(message: types.Message):
+        if message.chat.type != "private":
+            await message.reply("Для личной подписки напишите мне в личные сообщения.")
+            return
+        parts = (message.text or "").split(maxsplit=1)
+        if len(parts) < 2:
+            await message.answer("Использование: /follow TwitchЛогин")
+            return
+        ok, reply = subscribe("telegram", message.from_user.id, parts[1])
+        await message.answer(("✅ " if ok else "ℹ️ ") + reply)
+
+    @dp.message(Command("unfollow"))
+    async def cmd_unfollow(message: types.Message):
+        if message.chat.type != "private":
+            await message.reply("Эта команда работает в личных сообщениях.")
+            return
+        parts = (message.text or "").split(maxsplit=1)
+        if len(parts) < 2:
+            await message.answer("Использование: /unfollow TwitchЛогин")
+            return
+        ok, reply = unsubscribe("telegram", message.from_user.id, parts[1])
+        await message.answer(("✅ " if ok else "ℹ️ ") + reply)
+
+    @dp.message(Command("follows"))
+    async def cmd_follows(message: types.Message):
+        if message.chat.type != "private":
+            await message.reply("Список личных подписок доступен в личных сообщениях.")
+            return
+        names = list_subscriptions("telegram", message.from_user.id)
+        await message.answer("📺 Ваши подписки:\n" + "\n".join("• @" + name for name in names)
+                             if names else "У вас пока нет подписок. Используйте /follow TwitchЛогин.")
 
     # ---------------------------------------------------------
     # /webadmin
