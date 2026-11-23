@@ -276,6 +276,14 @@ throw new Error(
 const API =
 "https://webapp.projectbw.ru/api/twitch";
 
+async function telegramFetch(url, options = {}) {
+    const headers = {
+        ...(options.headers || {}),
+        "X-Telegram-Init-Data": tg.initData
+    };
+    return fetch(url, { ...options, headers });
+}
+
 
 let current = "";
 
@@ -339,7 +347,7 @@ async function loadList(){
 try{
 
 let r =
-await fetch(
+await telegramFetch(
 API + "/streamers"
 );
 
@@ -441,7 +449,7 @@ document.getElementById(
 
 
 let r =
-await fetch(
+await telegramFetch(
 API+
 "/streamer/"+
 encodeURIComponent(current)
@@ -508,7 +516,7 @@ return;
 try{
 
 let r =
-await fetch(
+await telegramFetch(
 API+
 "/preview/"+
 encodeURIComponent(current)
@@ -828,7 +836,7 @@ el.checked;
 
 
 let response =
-await fetch(
+await telegramFetch(
 
 API+
 "/streamer/"+

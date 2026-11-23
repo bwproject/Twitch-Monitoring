@@ -1,5 +1,6 @@
 from __future__ import annotations
-import json, re, os, uuid
+import json, re, os, uuid, hmac, hashlib, time
+from urllib.parse import parse_qsl
 from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import APIRouter, Request
@@ -21,7 +22,22 @@ def configure_web_app(app):
     app.add_middleware(SessionMiddleware,secret_key=get_session_secret(),session_cookie="twitch_admin_session",
                        same_site="lax",https_only=os.getenv("WEB_COOKIE_SECURE", "false").strip().lower() in ("1", "true", "yes", "on"),max_age=43200)
     app.include_router(router)
-def current_user(request): return request.session.get("user")
+def current_user(request):
+    """Resolve the signed-in account against current server-side permissions."""
+    session_user = request.session.get("user")
+    if not isinstance(session_user, dict) or not session_user.get("username"):
+        return None
+    username = str(session_user["username"])
+    account = next((item for item in load_users()
+                    if str(item.get("username", "")) == username), None)
+    if not account or not account.get("enabled", True):
+        request.session.clear()
+        return None
+    return {
+        "username": account["username"],
+        "role": account.get("role", "user"),
+        "streamers": [str(x).strip().lower() for x in account.get("streamers", [])],
+    }
 def require_user(request): return current_user(request)
 def load_json(file):
     try:
@@ -51,7 +67,46 @@ def save_streamer(data):
     name=str(data.get("name","")).strip().lower()
     save_json(get_streamer_file(name),data)
 def can_edit(user,name):
-    return bool(user and (user.get("role")=="admin" or name.lower() in user.get("streamers",[])))
+    return bool(user and (
+        user.get("role") == "admin"
+        or name.strip().lower() in user.get("streamers", [])
+    ))
+
+def telegram_webapp_user_id(request: Request) -> int | None:
+    """Validate Telegram Mini App initData; never trust a client-supplied user ID."""
+    init_data = request.headers.get("X-Telegram-Init-Data", "")
+    token = os.getenv("TELEGRAM_TOKEN", "").strip()
+    if not init_data or not token:
+        return None
+    try:
+        fields = dict(parse_qsl(init_data, keep_blank_values=True, strict_parsing=True))
+        received_hash = fields.pop("hash")
+        auth_date = int(fields["auth_date"])
+        now = int(time.time())
+        if auth_date > now + 30 or now - auth_date > 86400:
+            return None
+        check_string = "\\n".join(f"{key}={value}" for key, value in sorted(fields.items()))
+        secret_key = hmac.new(b"WebAppData", token.encode("utf-8"), hashlib.sha256).digest()
+        expected_hash = hmac.new(secret_key, check_string.encode("utf-8"), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected_hash, received_hash):
+            return None
+        telegram_user = json.loads(fields["user"])
+        return int(telegram_user["id"])
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return None
+
+def telegram_owns_streamer(request: Request, name: str):
+    telegram_id = telegram_webapp_user_id(request)
+    if telegram_id is None:
+        return None
+    streamer = load_streamer(name)
+    if not streamer:
+        return None
+    try:
+        owner_id = int(streamer.get("tg_id", 0))
+    except (TypeError, ValueError):
+        return None
+    return streamer if owner_id == telegram_id else None
 @router.get("/", include_in_schema=False)
 async def landing_page(): return FileResponse(TEMPLATES_DIR / "index.html")
 
@@ -270,32 +325,95 @@ async def admin_save_user(request:Request):
     except (ValueError,TypeError) as exc:
         return JSONResponse({"ok":False,"error":str(exc)},status_code=400)
 @router.get("/preview/{name}")
-async def preview(name:str):
-    streamer=load_streamer(name)
-    if not streamer: return JSONResponse({"error":"not found"},status_code=404)
-    try: twitch=get_streamer_status(name) or {}
-    except Exception as exc: print("[WEBAPP TWITCH ERROR]",exc); twitch={}
-    return {"name":streamer.get("name",name),"url":f"https://twitch.tv/{name}","title":twitch.get("title",""),
-            "game":twitch.get("game_name",""),"viewer_count":twitch.get("viewer_count",0),"started_at":twitch.get("started_at",""),
-            "thumbnail_url":twitch.get("thumbnail_url",""),"offline":twitch.get("offline",True),
-            "old_title":streamer.get("old_title",""),"old_game":streamer.get("old_game",""),
-            "duration":streamer.get("duration","0"),"peak_viewers":streamer.get("peak_viewers",0)}
-# Existing Telegram Mini App API retained.
+async def preview(name: str, request: Request):
+    user = require_user(request)
+    if not can_edit(user, name) and not telegram_owns_streamer(request, name):
+        return JSONResponse({"error": "Нет доступа к этому стримеру"}, status_code=403)
+    streamer = load_streamer(name)
+    if not streamer:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    try:
+        twitch = get_streamer_status(name) or {}
+    except Exception as exc:
+        print("[WEBAPP TWITCH ERROR]", exc)
+        twitch = {}
+    return {"name": streamer.get("name", name), "url": f"https://twitch.tv/{name}",
+            "title": twitch.get("title", ""), "game": twitch.get("game_name", ""),
+            "viewer_count": twitch.get("viewer_count", 0), "started_at": twitch.get("started_at", ""),
+            "thumbnail_url": twitch.get("thumbnail_url", ""), "offline": twitch.get("offline", True),
+            "old_title": streamer.get("old_title", ""), "old_game": streamer.get("old_game", ""),
+            "duration": streamer.get("duration", "0"), "peak_viewers": streamer.get("peak_viewers", 0)}
+# Telegram Mini App endpoints require a valid Telegram-signed initData value.
 @router.get("/twitch", include_in_schema=False)
 @router.get("/twitch/", include_in_schema=False)
 async def twitch_webapp_page(): return FileResponse(TWITCH_WEBAPP_HTML)
 
 @router.get("/streamers")
-async def streamers():
-    return [{"name":x.get("name"),"file":get_streamer_file(x["name"]).exists()} for x in load_streamers() if x.get("name")]
+async def streamers(request: Request):
+    telegram_id = telegram_webapp_user_id(request)
+    if telegram_id is None:
+        return JSONResponse({"error": "Требуется авторизация Telegram"}, status_code=401)
+    owned = []
+    for item in load_streamers():
+        if not item.get("name"):
+            continue
+        try:
+            is_owner = int(item.get("tg_id", 0)) == telegram_id
+        except (TypeError, ValueError):
+            is_owner = False
+        if is_owner:
+            owned.append({"name": item["name"], "file": get_streamer_file(item["name"]).exists()})
+    return owned
+
 @router.get("/streamer/{name}")
-async def get_streamer(name:str):
-    data=load_streamer(name)
-    return data if data else JSONResponse({"error":"not found"},status_code=404)
+async def get_streamer(name: str, request: Request):
+    data = telegram_owns_streamer(request, name)
+    if data is None:
+        return JSONResponse({"error": "Нет доступа к этому стримеру"}, status_code=403)
+    return data
+
 @router.post("/streamer/{name}")
-async def update_streamer(name:str,request:Request):
+async def update_streamer(name: str, request: Request):
+    original = telegram_owns_streamer(request, name)
+    if original is None:
+        return JSONResponse({"ok": False, "error": "Нет доступа к этому стримеру"}, status_code=403)
     try:
-        data=await request.json()
-        if not isinstance(data,dict): return JSONResponse({"ok":False,"error":"JSON must object"},status_code=400)
-        data["name"]=name; save_streamer(data); return {"ok":True,"file":f"{name}.json"}
-    except Exception as exc: return JSONResponse({"ok":False,"error":str(exc)},status_code=500)
+        data = await request.json()
+        if not isinstance(data, dict):
+            return JSONResponse({"ok": False, "error": "JSON должен быть объектом"}, status_code=400)
+        updated = dict(original)
+        incoming_messages = data.get("messages")
+        if isinstance(incoming_messages, dict):
+            messages = dict(original.get("messages", {}))
+            for key in ("start", "title_change", "game_change", "end"):
+                value = incoming_messages.get(key)
+                if isinstance(value, str):
+                    messages[key] = value[:10000]
+            updated["messages"] = messages
+        if isinstance(data.get("preview"), bool):
+            updated["preview"] = data["preview"]
+        incoming_channels = data.get("channels")
+        if isinstance(incoming_channels, list):
+            requested = {}
+            for channel in incoming_channels:
+                if isinstance(channel, dict):
+                    requested.setdefault(str(channel.get("chat_id", "")), []).append(channel)
+            merged_channels = []
+            for channel in original.get("channels", []):
+                if not isinstance(channel, dict):
+                    continue
+                saved_channel = dict(channel)
+                candidates = requested.get(str(channel.get("chat_id", "")), [])
+                candidate = candidates.pop(0) if candidates else {}
+                for field in ("notify_start", "notify_title_change", "notify_game_change", "notify_end"):
+                    if isinstance(candidate.get(field), bool):
+                        saved_channel[field] = candidate[field]
+                merged_channels.append(saved_channel)
+            updated["channels"] = merged_channels
+        # name, tg_id, channel IDs and every other protected field come from server data.
+        updated["name"] = original["name"]
+        updated["tg_id"] = original.get("tg_id")
+        save_streamer(updated)
+        return {"ok": True, "file": f"{name}.json"}
+    except (ValueError, TypeError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
