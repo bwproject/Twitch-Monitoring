@@ -10,7 +10,7 @@ SESSION_SECRET_FILE=AUTH_DIR/"session_secret"
 def _hash_password(password: str, salt: str|None=None)->str:
     salt=salt or secrets.token_hex(16)
     digest=hashlib.pbkdf2_hmac("sha256",password.encode(),bytes.fromhex(salt),310_000)
-    return f"pbkdf2_sha256\${salt}\${digest.hex()}"
+    return "pbkdf2_sha256$" + salt + "$" + digest.hex()
 def verify_password(password: str, encoded: str)->bool:
     try:
         algorithm,salt,expected=encoded.split("$",2)
