@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#090d18"><title>Заявка на подключение — ProjectBW</title>
+<style>
+:root{color-scheme:dark;--bg:#090d18;--line:#26334b;--muted:#9aa9c2}*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:32px 18px;background:radial-gradient(ellipse at 15% 0,#37205e 0,transparent 40%),var(--bg);font-family:system-ui;color:#f4f7ff}main{width:min(680px,100%);margin:30px auto}.panel{padding:28px;border:1px solid var(--line);border-radius:18px;background:#111a2bee}h1{margin-top:0}.muted{color:var(--muted);line-height:1.6}label{display:block;margin:16px 0 6px}input,textarea,select{width:100%;padding:13px;border-radius:9px;border:1px solid #35435d;background:#0b1220;color:white;font:inherit;margin-top:7px}textarea{min-height:110px;resize:vertical}button,.back{display:inline-flex;align-items:center;justify-content:center;padding:13px 18px;border:0;border-radius:10px;background:linear-gradient(110deg,#9255f5,#6378f5);color:white;font-weight:700;text-decoration:none;cursor:pointer;margin-top:20px}#result{margin-top:16px;white-space:pre-wrap}.error{color:#ff8b8b}
+</style></head><body><main><div class="panel"><h1>Подать заявку на подключение</h1><p class="muted">Оставьте заявку, чтобы команда ProjectBW добавила ваш Twitch-канал в систему уведомлений. После проверки мы свяжемся с вами. Не отправляйте пароли, токены или другие секреты.</p>
+<form id="applicationForm">
+<label>Ваш Twitch-логин *<input name="twitch_login" required maxlength="50" pattern="[A-Za-z0-9_]+" placeholder="например, streamer"></label>
+<label>Как с вами связаться *<input name="contact" required maxlength="160" placeholder="Telegram @username или Discord username"></label>
+<label>Куда хотите получать уведомления<select name="platform"><option value="telegram">Telegram</option><option value="discord">Discord</option><option value="lolka">Lolka</option><option value="all">Все доступные платформы</option></select></label>
+<label>Ссылка или ID канала для уведомлений<input name="channel" maxlength="200" placeholder="Необязательно, можно сообщить позже"></label>
+<label>Комментарий<textarea name="message" maxlength="1000" placeholder="Дополнительная информация"></textarea></label>
+<button type="submit">Отправить заявку</button><div id="result" class="muted" role="status"></div>
+</form><a class="back" href="/">← На главную</a></div></main>
+<script>
+const form=document.getElementById('applicationForm'),result=document.getElementById('result');
+form.addEventListener('submit',async e=>{e.preventDefault();result.className='muted';result.textContent='Отправка…';const payload=Object.fromEntries(new FormData(form).entries());try{const r=await fetch('/api/applications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await r.json();if(!r.ok)throw new Error(data.error||'Не удалось отправить заявку');form.reset();result.textContent='Заявка отправлена! Команда ProjectBW рассмотрит её и свяжется с вами.';}catch(err){result.className='error';result.textContent=err.message;}});
+</script></body></html>
