@@ -48,6 +48,9 @@ def save_streamer(data):
     save_json(get_streamer_file(name),data)
 def can_edit(user,name):
     return bool(user and (user.get("role")=="admin" or name.lower() in user.get("streamers",[])))
+@router.get("/", include_in_schema=False)
+async def landing_page(): return FileResponse(BASE_DIR / "index.html")
+
 @router.get("/admin",include_in_schema=False)
 @router.get("/admin/login",include_in_schema=False)
 async def admin_page(): return FileResponse(ADMIN_HTML)
