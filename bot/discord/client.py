@@ -10,7 +10,6 @@ class DiscordNotificationClient:
         intents.guilds = True
         intents.dm_messages = True
         intents.messages = True
-        intents.message_content = True
         self.client = discord.Client(intents=intents)
 
         @self.client.event
