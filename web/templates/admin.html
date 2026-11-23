@@ -20,7 +20,7 @@ async function addStreamer(){
   const button=$('addStreamerButton');
   const status=$('addStreamerStatus');
   let value=input.value.trim();
-  value=value.replace(/^https?:\\/\\/(www\\.)?twitch\\.tv\\//i,'').replace(/^@/,'').replace(/\\/$/,'');
+  value=value.replace(/^https?:\/\/(www\.)?twitch\.tv\//i,'').replace(/^@/,'').replace(/\/$/,'');
   if(!value){status.textContent='Введите Twitch-логин или ссылку на канал.';status.className='error';return;}
   button.disabled=true;button.textContent='Проверяем Twitch…';status.className='muted';status.textContent='Проверяем существование канала через Twitch API…';
   try{
