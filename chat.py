@@ -111,9 +111,18 @@ def load_json(file):
 # CONFIG
 # ============================================================
 
-CONFIG = load_json(
-    CONFIG_FILE
-)
+# Twitch credentials are provided only through environment variables.
+# No OAuth tokens or client secrets are stored in the repository.
+import os
+
+CONFIG = {
+    "bot_nick": os.getenv("TWITCH_BOT_NICK"),
+    "oauth": os.getenv("TWITCH_OAUTH"),
+    "client_id": os.getenv("TWITCH_CLIENT_ID"),
+    "client_secret": os.getenv("TWITCH_CLIENT_SECRET"),
+    "bot_id": os.getenv("TWITCH_BOT_ID"),
+    "prefix": os.getenv("TWITCH_CHAT_PREFIX", "!")
+}
 
 
 BOT_NICK = CONFIG.get(

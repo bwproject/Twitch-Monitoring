@@ -1,110 +1,49 @@
-# 🎮 Twitch Monitoring
+# Twitch Monitoring — ProjectBW
 
-<p align="center">
-<b>Telegram бот для мониторинга Twitch-стримеров</b>
-</p>
+Telegram-бот и сервис мониторинга Twitch-трансляций с отдельным Twitch Chat Bot и WebApp-панелью.
 
----
+## Требования
 
-## 📌 О проекте
+- Python 3.12 или новее (в том числе Python 3.14)
+- Telegram Bot Token
+- Twitch Client ID и Client Secret
+- Отдельные OAuth-данные Twitch Chat Bot, если используется чат-бот
 
-**Twitch-Monitoring** — автоматический мониторинг Twitch-каналов с отправкой уведомлений в Telegram.
+## Установка
 
-Бот отслеживает состояние стримеров, получает данные через Twitch API и сообщает о начале трансляций.
-
----
-
-## ✨ Возможности
-
-- 📺 Проверка онлайн/офлайн статуса Twitch каналов
-- 🔔 Уведомления о начале стрима
-- 🎮 Получение названия трансляции и категории
-- 👥 Поддержка нескольких стримеров
-- ⚙️ Настройка сообщений уведомлений
-- 🗂 Индивидуальные настройки для каждого канала
-- 🤖 Управление через Telegram команды
-
----
-
-## 🛠 Технологии
-
-- 🐍 Python
-- 🤖 Aiogram
-- 🎮 Twitch Helix API
-- ⚡ AsyncIO
-- 🔐 dotenv
-
----
-
-## ⚙️ Установка
+1. Скопируйте `.env.example` в `.env`.
+2. Заполните переменные окружения своими токенами.
+3. Установите зависимости:
 
 ```bash
-git clone https://github.com/bwproject/Twitch-Monitoring.git
-cd Twitch-Monitoring
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-Создайте `.env`:
+## Запуск Pelican / Pterodactyl
 
-```env
-TELEGRAM_TOKEN=your_token
-TWITCH_CLIENT_ID=your_client_id
-TWITCH_CLIENT_SECRET=your_secret
-```
-
-Запуск:
+Рабочая точка входа остаётся совместимой с текущим запуском:
 
 ```bash
-python bot.py
+python main.py
 ```
 
----
+В настройках сервера укажите файл зависимостей `requirements.txt`. Не используйте `PY_PACKAGES` для повторной установки тех же пакетов.
 
-## 📁 Структура
+## Безопасность
 
-```
-Twitch-Monitoring/
-├── bot.py          # Запуск Telegram бота
-├── twitch.py       # Мониторинг стримеров
-├── twitch_api.py   # Работа с Twitch API
-├── admin.py        # Администрирование
-├── streamers.json  # Список каналов
-└── requirements.txt
-```
+- Не добавляйте `.env`, OAuth-токены, Telegram-токены или Twitch Client Secret в Git.
+- Используйте переменные окружения панели Pelican либо локальный `.env`.
+- Если токен или секрет когда-либо попал в публичный репозиторий, отзовите его и выпустите новый. Удаление файла не удаляет секрет из истории Git.
 
----
+## Компоненты
 
-## 🔧 Команды
+- `main.py` — запуск приложения.
+- `twitch.py`, `twitch_api.py` — мониторинг и Twitch Helix API.
+- `admin.py`, `command.py` — Telegram-обработчики.
+- `chat.py`, `command_loader.py` — Twitch Chat Bot.
+- `webapp.py`, `twitch/index.html` — API и интерфейс WebApp.
+- JSON-файлы — конфигурация стримеров, кэш и пользовательские команды.
 
-| Команда | Описание |
-|---|---|
-| `/start` | Запуск бота |
-| `/streamerslist` | Список стримеров |
-| `/edit` | Настройка сообщений |
-| `/test` | Проверка уведомлений |
-| `/notify` | Настройки уведомлений |
+## Pelican
 
----
-
-## 🚧 Roadmap
-
-- ✅ Twitch мониторинг
-- ✅ Telegram уведомления
-- ✅ Настройка сообщений
-- 🔄 Web-панель управления
-- 🔄 Docker deployment
-- 🔄 Расширенная статистика
-
----
-
-## 🤝 Поддержка
-
-Нашли ошибку или есть идея?
-
-Создайте Issue или Pull Request.
-
----
-
-<p align="center">
-❤️ BW Project
-</p>
+Для Python 3.14 нельзя оставлять старую связку `aiogram==3.3.0` / `pydantic==2.5.3`: она приводит к сборке несовместимого `pydantic-core`. В этом репозитории используется актуальная линейка aiogram 3.x с совместимым Pydantic.

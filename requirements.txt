@@ -1,5 +1,5 @@
-aiogram==3.3.0
-python-telegram-bot==20.3
-requests==2.31.0
-python-dotenv==1.0.0
-twitchio
+# Python 3.12+ (including Python 3.14)
+aiogram>=3.24,<4
+requests>=2.32,<3
+python-dotenv>=1.0,<2
+twitchio>=3.3,<4
