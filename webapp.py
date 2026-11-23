@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
-from web_auth import authenticate, get_session_secret, load_users, save_users, _hash_password
+from web_auth import authenticate, get_session_secret, load_users, save_users
 try:
     from bot3.twitch_api import get_streamer_status
 except ImportError:
@@ -120,8 +120,8 @@ async def admin_save_user(request:Request):
         target["enabled"]=bool(data.get("enabled",True)); password=str(data.get("password",""))
         if password:
             if len(password)<10: raise ValueError("Пароль должен быть не короче 10 символов")
-            target["password_hash"]=_hash_password(password)
-        elif not target.get("password_hash"): raise ValueError("Для нового пользователя укажите пароль")
+            target.pop("password_hash", None); target["password"]=password
+        elif not target.get("password") and not target.get("password_hash"): raise ValueError("Для нового пользователя укажите пароль")
         save_users(users); return {"ok":True}
     except (ValueError,TypeError) as exc:
         return JSONResponse({"ok":False,"error":str(exc)},status_code=400)
