@@ -4,6 +4,7 @@ import asyncio, html, logging, os, re
 from bot.discord.client import DiscordNotificationClient
 from bot.lolka.client import LolkaNotificationClient
 from runtime_status import update as update_runtime_status
+from subscriptions import subscribers
 log = logging.getLogger("twitch_monitor.notifications")
 def to_platform_text(value: str) -> str:
     text = value or ""
@@ -58,6 +59,24 @@ class CrossPlatformNotifier:
             log.info("%s notification sent to channel %s", platform, channel_id)
         except Exception:
             log.exception("Failed to send %s notification to channel %s", platform, channel_id)
+    async def send_personal(self, platform: str, user_id: str, message: str) -> None:
+        client = self.clients.get(platform)
+        if client is None:
+            return
+        try:
+            await client.send_dm(str(user_id), to_platform_text(message))
+        except Exception:
+            log.exception("Failed to send personal %s notification to user %s", platform, user_id)
+    async def send_personal_event(self, streamer: str, message: str, telegram_bot=None) -> None:
+        for user_id in subscribers("telegram", streamer):
+            if telegram_bot is not None:
+                try:
+                    await telegram_bot.send_message(int(user_id), message, parse_mode="HTML")
+                except Exception:
+                    log.exception("Failed to send personal Telegram notification to %s", user_id)
+        for platform in ("discord", "lolka"):
+            for user_id in subscribers(platform, streamer):
+                await self.send_personal(platform, user_id, message)
     async def close(self) -> None:
         for platform, client in list(self.clients.items()):
             try:
