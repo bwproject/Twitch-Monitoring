@@ -6,7 +6,7 @@
 
 **ProjectBW** · Один сервис для отслеживания эфиров, управления каналами и отправки уведомлений в Telegram, Discord и Lolka.
 
-[🌐 Главная страница](https://twitch.projectbw.ru) · [🐙 GitHub](https://github.com/bwproject/Twitch-Monitoring) · [📝 Подать заявку](https://twitch.projectbw.ru/apply)
+[🌐 Главная страница](https://twitch.projectbw.ru) · [🐙 GitHub](https://github.com/bwproject/Twitch-Monitoring) · [📝 Подать заявку](https://twitch.projectbw.ru/apply) · [☕ Поддержать проект](https://dalink.to/the_mr_mes109)
 
 ![Python](https://img.shields.io/badge/Python-3.12%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/Web-FastAPI-009688?logo=fastapi&logoColor=white)
@@ -256,6 +256,18 @@ Twitch-Monitoring/
 Хотите добавить свой Twitch-канал в мониторинг и получать уведомления?
 
 [**Подать заявку через сайт ProjectBW →**](https://twitch.projectbw.ru/apply)
+
+## ☕ Поддержать проект
+
+Twitch Monitoring бесплатен для всех пользователей, но его работа требует ресурсов и постоянных затрат на серверы и инфраструктуру. Если сервис оказался полезен и вы хотите помочь ProjectBW развивать его дальше, вы можете поддержать проект:
+
+<div align="center">
+
+[**☕ Поддержать ProjectBW на DaLink →**](https://dalink.to/the_mr_mes109)
+
+</div>
+
+Даже небольшая поддержка помогает оплачивать инфраструктуру и улучшать сервис. Спасибо! ❤️
 
 ## 🔗 Ссылки
 
