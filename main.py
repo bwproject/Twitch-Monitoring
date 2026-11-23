@@ -52,6 +52,7 @@ from chat import (
 
 from webapp import configure_web_app
 from runtime_status import update as update_runtime_status
+from notifications import CrossPlatformNotifier
 
 try:
     from proxsybot import init_proxy, proxy_watcher
@@ -387,7 +388,8 @@ async def main():
             bot,
             TWITCH_CLIENT_ID,
             TWITCH_CLIENT_SECRET,
-            CHECK_INTERVAL
+            CHECK_INTERVAL,
+            notifier=notifier
         )
     )
 
@@ -405,6 +407,7 @@ async def main():
         web_server.should_exit = True
         await web_task
         await bot.session.close()
+        await notifier.close()
 
 
         logger.info(
