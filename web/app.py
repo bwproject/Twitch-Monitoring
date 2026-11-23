@@ -133,6 +133,44 @@ async def admin_runtime_status(request: Request):
         return JSONResponse({"error": "Требуется вход"}, status_code=401)
     return runtime_status_snapshot()
 
+@router.get("/public/streamers", include_in_schema=False)
+async def public_streamers():
+    """Public list of configured Twitch channels with their current live status."""
+    items = load_streamers()
+    names = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name") or item.get("login") or item.get("username") or "").strip().lower()
+        if re.fullmatch(r"[a-zA-Z0-9_]{1,50}", name) and name not in names:
+            names.append(name)
+    if not names:
+        return {"streamers": [], "live": []}
+    try:
+        statuses = await run_in_threadpool(__import__("twitch.api", fromlist=["get_streamers_status"]).get_streamers_status, names)
+    except Exception as exc:
+        print("[PUBLIC STREAMERS ERROR]", exc)
+        statuses = {}
+    result = []
+    for name in names:
+        status = statuses.get(name) or {}
+        online = bool(status.get("online") or (status.get("offline") is False and status.get("started_at")))
+        thumb = str(status.get("thumbnail_url") or "")
+        if thumb:
+            thumb = thumb.replace("{width}", "640").replace("{height}", "360")
+        result.append({
+            "name": name,
+            "display_name": status.get("user_name") or status.get("user_login") or name,
+            "is_live": online,
+            "title": status.get("title") or "",
+            "game_name": status.get("game_name") or "",
+            "viewer_count": int(status.get("viewer_count") or 0),
+            "started_at": status.get("started_at") or "",
+            "thumbnail_url": thumb,
+            "url": f"https://twitch.tv/{name}",
+        })
+    return {"streamers": result, "live": [item for item in result if item["is_live"]]}
+ 
 @router.get("/apply", include_in_schema=False)
 async def application_page(): return FileResponse(TEMPLATES_DIR / "apply.html")
 
