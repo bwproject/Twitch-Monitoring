@@ -46,7 +46,7 @@ from chat import (
     start_chat_bot
 )
 
-from webapp import router as webapp_router
+from webapp import configure_web_app
 
 try:
     from proxsybot import init_proxy, proxy_watcher
@@ -273,7 +273,7 @@ async def main():
 
     # Run the WebApp API in parallel with Telegram and Twitch workers.
     web_app = FastAPI(title="Twitch Monitoring API")
-    web_app.include_router(webapp_router)
+    configure_web_app(web_app)
     web_server = uvicorn.Server(
         uvicorn.Config(web_app, host=WEB_HOST, port=WEB_PORT, log_level="info")
     )
