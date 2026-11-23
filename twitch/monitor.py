@@ -132,6 +132,8 @@ async def send_event(bot, notifier, streamer, event, **values):
     except (KeyError, ValueError) as exc:
         logger.error("MESSAGE TEMPLATE ERROR %s/%s: %s", name, event, exc)
         return
+    if notifier is not None:
+        await notifier.send_personal_event(name, message, telegram_bot=bot)
     for channel in streamer.get("channels", []):
         if not channel.get(f"notify_{event}", True):
             continue
