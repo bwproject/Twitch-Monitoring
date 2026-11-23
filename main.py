@@ -325,95 +325,85 @@ async def main():
 
 
     # ==============================
-    # TELEGRAM BOT
+    # OPTIONAL NOTIFICATION CLIENTS
     # ==============================
 
-    # Optional Discord and Lolka notification clients.\n    notifier = CrossPlatformNotifier()\n    await notifier.start()\n\n    bot = await create_bot()
-
-
-    await safe_delete_webhook(
-        bot
-    )
-
+    notifier = CrossPlatformNotifier()
     try:
-        telegram_me = await bot.get_me()
-        update_runtime_status("telegram", state="connected", label=telegram_me.username or telegram_me.full_name, error=None)
-    except Exception as e:
-        update_runtime_status("telegram", state="error", error=str(e))
-        logger.exception("TELEGRAM STATUS CHECK ERROR: %s", e)
+        await notifier.start()
+    except Exception:
+        logger.exception("NOTIFICATION CLIENTS START ERROR; continuing without them")
 
-
-    logger.info(
-        "Запускаем polling..."
-    )
-
-
-
-    dp = Dispatcher(
-        storage=MemoryStorage()
-    )
-
-
-
-    # ---------------- handlers ----------------
-
-    register_command_handlers(
-        dp
-    )
-
-
-    register_admin_handlers(
-        dp
-    )
-
-
-    register_twitch_api_handler(
-        dp
-    )
-
-
-
-    # ---------------- watchers ----------------
-
+    # Twitch monitoring is independent from all messaging platforms.
     asyncio.create_task(
-        watch_streamers_file(
-            CHECK_INTERVAL
-        )
+        watch_streamers_file(CHECK_INTERVAL),
+        name="streamers-file-watcher"
     )
-
-
-
     asyncio.create_task(
         monitor(
-            bot,
+            None,
             TWITCH_CLIENT_ID,
             TWITCH_CLIENT_SECRET,
             CHECK_INTERVAL,
             notifier=notifier
-        )
+        ),
+        name="twitch-monitor"
     )
 
+    # ==============================
+    # OPTIONAL TELEGRAM BOT
+    # ==============================
 
+    bot = None
+    telegram_task = None
+    if not TELEGRAM_TOKEN or not TELEGRAM_TOKEN.strip():
+        logger.warning("TELEGRAM_TOKEN не задан — Telegram-бот пропущен")
+        update_runtime_status("telegram", state="disabled", error=None)
+    else:
+        try:
+            bot = await create_bot()
+            await safe_delete_webhook(bot)
+            telegram_me = await bot.get_me()
+            update_runtime_status(
+                "telegram",
+                state="connected",
+                label=telegram_me.username or telegram_me.full_name,
+                error=None
+            )
+
+            dp = Dispatcher(storage=MemoryStorage())
+            register_command_handlers(dp)
+            register_admin_handlers(dp)
+            register_twitch_api_handler(dp)
+            telegram_task = asyncio.create_task(
+                dp.start_polling(bot),
+                name="telegram-polling"
+            )
+            logger.info("Telegram bot запущен")
+        except Exception as exc:
+            update_runtime_status("telegram", state="error", error=str(exc))
+            logger.exception("TELEGRAM START ERROR — продолжаем без Telegram")
+            if bot is not None:
+                try:
+                    await bot.session.close()
+                except Exception:
+                    logger.exception("TELEGRAM SESSION CLOSE ERROR")
+            bot = None
 
     try:
-        update_runtime_status("telegram", state="connected", error=None)
-        await dp.start_polling(
-            bot
-        )
-
-
+        if telegram_task is not None:
+            await telegram_task
+        else:
+            # Keep the web panel, Twitch monitor and available notification
+            # clients alive even when Telegram is not configured.
+            await asyncio.Event().wait()
     finally:
-        update_runtime_status("telegram", state="stopped")
+        update_runtime_status("telegram", state="stopped" if bot else "disabled")
         web_server.should_exit = True
         await web_task
-        await bot.session.close()
+        if bot is not None:
+            await bot.session.close()
         await notifier.close()
-
-
-        logger.info(
-            "Bot stopped"
-        )
-
 
 
 # ---------------------- START ----------------------

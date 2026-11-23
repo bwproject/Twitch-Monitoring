@@ -146,7 +146,7 @@ async def send_event(bot, notifier, streamer, event, **values):
         if not channel.get(f"notify_{event}", True):
             continue
         chat_id = channel.get("chat_id")
-        if chat_id:
+        if chat_id and bot is not None:
             try:
                 await bot.send_message(chat_id, message, parse_mode="HTML")
             except Exception as exc:
