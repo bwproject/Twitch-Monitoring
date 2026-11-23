@@ -200,8 +200,14 @@ async def admin_update_streamer(name:str,request:Request):
         if not isinstance(data,dict): raise ValueError("Ожидается объект")
         original=load_streamer(name)
         if not original: return JSONResponse({"error":"Стример не найден"},status_code=404)
-        data["name"]=original["name"]
-        if user.get("role")!="admin": data["tg_id"]=original.get("tg_id")
+        data["name"] = original["name"]
+        if user.get("role") != "admin":
+            owner_id = original.get("tg_id")
+            if owner_id in (None, ""):
+                master = next((item for item in load_streamers()
+                               if str(item.get("name", "")).lower() == name.lower()), None)
+                owner_id = master.get("tg_id") if master else None
+            data["tg_id"] = owner_id
         save_streamer(data); return {"ok":True}
     except (ValueError,TypeError) as exc:
         return JSONResponse({"ok":False,"error":str(exc)},status_code=400)
@@ -335,7 +341,11 @@ async def admin_save_user(request:Request):
 @router.get("/preview/{name}")
 async def preview(name: str, request: Request):
     user = require_user(request)
-    if not can_edit(user, name) and not telegram_owns_streamer(request, name):
+    if user:
+        allowed = can_edit(user, name)
+    else:
+        allowed = telegram_owns_streamer(request, name) is not None
+    if not allowed:
         return JSONResponse({"error": "Нет доступа к этому стримеру"}, status_code=403)
     streamer = load_streamer(name)
     if not streamer:
