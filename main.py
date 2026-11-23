@@ -328,7 +328,7 @@ async def main():
     # TELEGRAM BOT
     # ==============================
 
-    bot = await create_bot()
+    # Optional Discord and Lolka notification clients.\n    notifier = CrossPlatformNotifier()\n    await notifier.start()\n\n    bot = await create_bot()
 
 
     await safe_delete_webhook(
