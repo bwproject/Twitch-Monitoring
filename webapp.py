@@ -6,7 +6,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 from web_auth import authenticate, get_session_secret, load_users, save_users
-from runtime_status import snapshot as runtime_status_snapshot\nfrom runtime_config import save_integration_settings, integration_status
+from runtime_status import snapshot as runtime_status_snapshot
+from runtime_config import save_integration_settings, integration_status
 try:
     from bot3.twitch_api import get_streamer_status, get_live_preview
 except ImportError:
@@ -175,7 +176,8 @@ async def admin_update_integration_settings(request: Request):
         }.items()}, "restart_required": True}
     except (ValueError, TypeError) as exc:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
-\n@router.get("/admin/api/users")
+
+@router.get("/admin/api/users")
 async def admin_list_users(request:Request):
     user=require_user(request)
     if not user: return JSONResponse({"error":"Требуется вход"},status_code=401)
