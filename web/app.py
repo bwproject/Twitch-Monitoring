@@ -102,8 +102,16 @@ def telegram_owns_streamer(request: Request, name: str):
     streamer = load_streamer(name)
     if not streamer:
         return None
+    owner_value = streamer.get("tg_id")
+    if owner_value in (None, ""):
+        master = next((item for item in load_streamers()
+                       if str(item.get("name", "")).lower() == name.lower()), None)
+        owner_value = master.get("tg_id") if master else None
+        if owner_value not in (None, ""):
+            streamer = dict(streamer)
+            streamer["tg_id"] = owner_value
     try:
-        owner_id = int(streamer.get("tg_id", 0))
+        owner_id = int(owner_value or 0)
     except (TypeError, ValueError):
         return None
     return streamer if owner_id == telegram_id else None
