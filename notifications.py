@@ -64,7 +64,16 @@ class CrossPlatformNotifier:
         if client is None:
             return
         try:
-            await asyncio.wait_for(client.wait_until_ready(), timeout=15)
+            wait_ready = getattr(client, "wait_until_ready", None)
+            if wait_ready is not None:
+                await asyncio.wait_for(wait_ready(), timeout=15)
+            else:
+                for _ in range(30):
+                    if client.is_ready():
+                        break
+                    await asyncio.sleep(0.5)
+                if not client.is_ready():
+                    raise TimeoutError("Бот не подключился за 15 секунд")
             channel = client.get_channel(int(str(channel_id).strip()))
             if channel is None:
                 fetch = getattr(client, "fetch_channel", None)
