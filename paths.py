@@ -3,6 +3,13 @@ from __future__ import annotations
 import json, os, re, shutil
 from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent
+
+# Load project-local environment before resolving BOT_DATA_DIR.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(ROOT_DIR / ".env")
+except ImportError:
+    pass
 def _resolve_data_dir() -> Path:
     raw = Path(os.getenv("BOT_DATA_DIR", "data")).expanduser()
     return raw.resolve() if raw.is_absolute() else (ROOT_DIR / raw).resolve()
