@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#090d18">
   <meta name="description" content="ProjectBW Twitch Monitoring — мониторинг Twitch-стримов и уведомления в Telegram, Discord и Lolka.">
+  <meta name="color-scheme" content="dark">
   <title>Twitch Monitoring — ProjectBW</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrd2xgQ==" crossorigin="anonymous" referrerpolicy="no-referrer">
   <style>
     :root{color-scheme:dark;--bg:#090d18;--panel:#111a2b;--text:#f4f7ff;--muted:#9aa9c2;--line:#26334b;--accent:#9b5cff;--cyan:#48d9e8}
     *{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(ellipse at 18% 8%,#37205e 0,transparent 38%),radial-gradient(ellipse at 88% 28%,#123b55 0,transparent 34%),var(--bg);display:flex;flex-direction:column}
@@ -23,31 +26,96 @@
     @media(max-width:680px){.channel-row{padding:10px 11px}.channel-state{font-size:11px;padding:5px 8px}.section-heading{align-items:start;flex-direction:column}}
     .features{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;text-align:left}.feature{padding:21px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(145deg,#141e31dd,#0e1625dd);min-height:150px}.ico{width:36px;height:36px;border-radius:11px;background:#8d5cff20;color:#c39aff;display:grid;place-items:center;margin-bottom:15px}.feature:nth-child(2) .ico{background:#48d9e820;color:var(--cyan)}.feature:nth-child(3) .ico{background:#6489ff20;color:#9bb1ff}.feature h2{font-size:15px;margin:0 0 8px}.feature p{font-size:13px;line-height:1.6;color:var(--muted);margin:0}
     footer{border-top:1px solid #ffffff12;padding:22px 0;color:#74839d;font-size:13px}.foot{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}footer a:hover{color:#fff}
-    @media(max-width:680px){.service-status{grid-template-columns:1fr}header{height:70px}.repo span{display:none}main{padding:54px 0}.features{grid-template-columns:1fr}.feature{min-height:auto}h1{letter-spacing:-1.8px}.lead{line-height:1.6}.actions{margin-bottom:38px}}
+    /* Bootstrap-assisted responsive layout */
+    .wrap{width:min(1100px,calc(100% - 40px))}
+    .brand{min-width:0}.brand>span:last-child{white-space:nowrap}
+    .repo{white-space:nowrap}
+    .btn:focus-visible,a:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+    .feature,.service,.channel-row,.stream-card{box-shadow:0 8px 28px #00000018}
+    .ico i{font-size:18px}
+    .section-heading{min-width:0}
+    .channel-list{min-width:0}
+    .channel-row{transition:border-color .18s,transform .18s}
+    .channel-row:active{transform:scale(.995)}
+    .stream-carousel{overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .stream-carousel::-webkit-scrollbar{display:none}
+    .stream-card{flex-basis:min(340px,82vw)}
+    .stream-cover{aspect-ratio:16/9}
+    @media(max-width:768px){
+      .wrap{width:min(100% - 28px,680px)}
+      header.wrap{height:68px}
+      .brand{gap:9px;font-size:14px}
+      .logo{width:36px;height:36px;flex:0 0 36px}
+      .brand>span:last-child{overflow:hidden;text-overflow:ellipsis}
+      .repo{font-size:0;gap:0;padding:10px}
+      .repo i,.repo svg{width:19px;height:19px}
+      main{padding:38px 0 48px}
+      .hero{width:100%}
+      h1{font-size:clamp(36px,9vw,58px);letter-spacing:-1.5px;line-height:1.08;margin:22px 0 16px}
+      .lead{font-size:16px;line-height:1.62}
+      .eyebrow{font-size:11px;padding:7px 11px}
+      .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:25px 0 34px}
+      .btn{min-height:48px;padding:10px 12px;border-radius:12px;font-size:13px;text-align:center}
+      .service-status{grid-template-columns:1fr;gap:9px;margin-bottom:22px}
+      .service{padding:13px 14px}
+      .channel-section{margin:27px 0 24px}
+      .section-heading{align-items:flex-start;flex-direction:column;gap:5px;margin-bottom:12px}
+      .section-heading h2{font-size:22px}
+      .section-heading p{font-size:12px}
+      .channel-row{gap:10px;padding:10px;border-radius:12px}
+      .channel-avatar{width:38px;height:38px;flex-basis:38px}
+      .channel-meta strong{font-size:13px}
+      .channel-meta small{font-size:11px;max-width:100%}
+      .channel-state{font-size:10px;padding:5px 7px}
+      .stream-carousel{gap:11px;margin-right:-14px;padding-right:14px}
+      .stream-card{flex:0 0 min(290px,82vw);border-radius:14px}
+      .stream-card-body{padding:11px 12px}
+      .stream-card-body strong{font-size:13px}
+      .stream-card-body p{font-size:11px}
+      .stream-card-foot{font-size:10px;gap:8px}
+      .features{grid-template-columns:1fr;gap:10px}
+      .feature{padding:17px;min-height:0;border-radius:14px}
+      .feature h2{font-size:14px}
+      .feature p{font-size:12px}
+      footer{padding:18px 0;font-size:12px}
+      .foot{flex-direction:column;align-items:center;text-align:center;gap:8px}
+    }
+    @media(max-width:390px){
+      .wrap{width:calc(100% - 22px)}
+      .brand{font-size:12px}
+      .actions{grid-template-columns:1fr}
+      .btn{min-height:46px}
+      .channel-state{font-size:9px;padding:4px 6px}
+      .channel-avatar{width:34px;height:34px;flex-basis:34px}
+      .stream-card{flex-basis:86vw}
+    }
+    @media(prefers-reduced-motion:reduce){
+      *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
+    }
   </style>
 </head>
 <body>
-  <header class="wrap">
+  <header class="wrap container-xl px-0">
     <a class="brand" href="/" aria-label="ProjectBW Twitch Monitoring">
-      <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h16v12l-5 5h-4l-3 2v-2H5z"/><path d="M10 8v5M16 8v5"/></svg></span>
+      <span class="logo"><i class="fa-brands fa-twitch" aria-hidden="true"></i><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h16v12l-5 5h-4l-3 2v-2H5z"/><path d="M10 8v5M16 8v5"/></svg></span>
       <span>ProjectBW <span style="color:#aebbd2;font-weight:550">/ Twitch Monitoring</span></span>
     </a>
     <a class="repo" href="https://github.com/bwproject/Twitch-Monitoring" target="_blank" rel="noopener noreferrer">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.55.1.76-.24.76-.54v-2.1c-3.1.68-3.76-1.32-3.76-1.32-.5-1.28-1.23-1.62-1.23-1.62-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15 1 1.7 2.62 1.21 3.26.93.1-.72.39-1.21.71-1.49-2.48-.28-5.09-1.24-5.09-5.52 0-1.22.44-2.21 1.15-2.99-.12-.28-.5-1.42.11-2.96 0 0 .94-.3 3.05 1.14a10.6 10.6 0 0 1 5.55 0c2.11-1.44 3.05-1.14 3.05-1.14.61 1.54.23 2.68.11 2.96.72.78 1.15 1.77 1.15 2.99 0 4.29-2.62 5.23-5.11 5.51.4.35.76 1.03.76 2.08v3.08c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z"/></svg>
-      <span>Исходный код на GitHub</span>
+      <i class="fa-brands fa-github" aria-hidden="true"></i><span>Исходный код на GitHub</span>
     </a>
   </header>
   <main>
-    <div class="wrap hero">
+    <div class="wrap container-xl px-0 hero">
       <div class="eyebrow"><span class="dot"></span> PROJECTBW · TWITCH TOOLS</div>
       <h1>Следи за стримами.<br><span class="gradient">Не пропускай главное.</span></h1>
       <p class="lead">Twitch Monitoring — сервис мониторинга Twitch-трансляций от ProjectBW. Отслеживает эфиры и изменения на каналах, а также отправляет уведомления в Telegram, Discord и Lolka. Поддержка других социальных сетей — в разработке. Управляй каналами и настройками через удобную веб-админку.</p>
       <p style="max-width:650px;margin:14px auto 0;color:#aebbd2;font-size:14px;line-height:1.65">Сервис бесплатный для вас, но его работа требует ресурсов и постоянных затрат на серверы и инфраструктуру. Если проект вам нравится, поддержите его и <a href="https://dalink.to/the_mr_mes109" target="_blank" rel="noopener noreferrer" style="color:#c69aff;font-weight:700;text-decoration:underline;text-underline-offset:3px">угостите нас кофе ☕</a>.</p>
       <div class="actions">
-        <a class="btn primary" href="/admin">Войти в админку <span aria-hidden="true">→</span></a>
-        <a class="btn secondary" href="/apply">Подать заявку</a>
-        <a class="btn secondary" href="https://dalink.to/the_mr_mes109" target="_blank" rel="noopener noreferrer">☕ Поддержать проект</a>
-        <a class="btn secondary" href="https://github.com/bwproject/Twitch-Monitoring" target="_blank" rel="noopener noreferrer">Посмотреть на GitHub</a>
+        <a class="btn primary" href="/admin"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Войти в админку</a>
+        <a class="btn secondary" href="/apply"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Подать заявку</a>
+        <a class="btn secondary" href="https://dalink.to/the_mr_mes109" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-mug-hot" aria-hidden="true"></i> Поддержать проект</a>
+        <a class="btn secondary" href="https://github.com/bwproject/Twitch-Monitoring" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-github" aria-hidden="true"></i> Посмотреть на GitHub</a>
       </div>
       <section class="service-status" aria-label="Статус сервисов">
         <div class="service" id="telegramStatus" data-state="starting"><span class="lamp"></span><div><strong>Telegram-бот</strong><small>Проверяем подключение…</small></div></div>
@@ -64,13 +132,13 @@
         <div class="stream-carousel" id="streamCarousel"><div class="empty-state" style="width:100%">Проверяем активные трансляции…</div></div>
       </section>
       <section class="features" aria-label="Возможности">
-        <article class="feature"><div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19V5m0 14h17M7 15l4-5 3 3 5-7"/></svg></div><h2>Мониторинг Twitch</h2><p>Отслеживание начала трансляций и изменений названия или категории канала.</p></article>
-        <article class="feature"><div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/></svg></div><h2>Уведомления в Telegram, Discord и Lolka</h2><p>Сообщения о начале и завершении эфира, смене названия и категории в выбранные каналы. Поддержка других соцсетей — в разработке.</p></article>
-        <article class="feature"><div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.08-.02a1.7 1.7 0 0 0-1.76.65l-.05.07h-3.4l-.05-.07a1.7 1.7 0 0 0-1.76-.65l-.08.02-1.7-2.94.06-.06A1.7 1.7 0 0 0 9.6 15l-.08-.04v-3.4l.08-.04a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.7-2.94.08.02a1.7 1.7 0 0 0 1.76-.65l.05-.07h3.4l.05.07a1.7 1.7 0 0 0 1.76.65l.08-.02 1.7 2.94-.06.06A1.7 1.7 0 0 0 19.4 11l.08.04v3.4z"/></svg></div><h2>Управление каналами</h2><p>Настройка отслеживаемых стримеров, шаблонов сообщений и прав пользователей.</p></article>
+        <article class="feature"><div class="ico"><i class="fa-solid fa-chart-line" aria-hidden="true"></i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19V5m0 14h17M7 15l4-5 3 3 5-7"/></svg></div><h2>Мониторинг Twitch</h2><p>Отслеживание начала трансляций и изменений названия или категории канала.</p></article>
+        <article class="feature"><div class="ico"><i class="fa-solid fa-comments" aria-hidden="true"></i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/></svg></div><h2>Уведомления в Telegram, Discord и Lolka</h2><p>Сообщения о начале и завершении эфира, смене названия и категории в выбранные каналы. Поддержка других соцсетей — в разработке.</p></article>
+        <article class="feature"><div class="ico"><i class="fa-solid fa-sliders" aria-hidden="true"></i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.08-.02a1.7 1.7 0 0 0-1.76.65l-.05.07h-3.4l-.05-.07a1.7 1.7 0 0 0-1.76-.65l-.08.02-1.7-2.94.06-.06A1.7 1.7 0 0 0 9.6 15l-.08-.04v-3.4l.08-.04a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.7-2.94.08.02a1.7 1.7 0 0 0 1.76-.65l.05-.07h3.4l.05.07a1.7 1.7 0 0 0 1.76.65l.08-.02 1.7 2.94-.06.06A1.7 1.7 0 0 0 19.4 11l.08.04v3.4z"/></svg></div><h2>Управление каналами</h2><p>Настройка отслеживаемых стримеров, шаблонов сообщений и прав пользователей.</p></article>
       </section>
     </div>
   </main>
-  <footer><div class="wrap foot"><span>© ProjectBW · Twitch Monitoring</span><a href="https://github.com/bwproject/Twitch-Monitoring" target="_blank" rel="noopener noreferrer">GitHub repository ↗</a></div></footer>
+  <footer><div class="wrap container-xl px-0 foot"><span>© ProjectBW · Twitch Monitoring</span><a href="https://github.com/bwproject/Twitch-Monitoring" target="_blank" rel="noopener noreferrer">GitHub repository ↗</a></div></footer>
 <script>
 const statusLabels={connected:"Подключен",connecting:"Подключается…",starting:"Запускается…",error:"Ошибка подключения",disconnected:"Отключен",stopped:"Остановлен"};
 async function refreshServiceStatus(){
@@ -126,5 +194,6 @@ function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&"
 refreshPublicStreamers();setInterval(refreshPublicStreamers,30000);
 
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>
