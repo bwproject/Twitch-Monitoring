@@ -35,7 +35,7 @@ class CrossPlatformNotifier:
                 intents = discord.Intents.none()
                 intents.guilds = True
                 self.discord = commands.Bot(command_prefix="!", intents=intents)
-                self.tasks.append(asyncio.create_task(self.discord.start(self.discord_token), name="discord-notifier"))
+                self.tasks.append(asyncio.create_task(self._run_client("Discord", self.discord, self.discord_token), name="discord-notifier"))
                 log.info("Discord notification bot is starting")
             except Exception:
                 log.exception("Could not initialize Discord notification bot")
@@ -44,10 +44,18 @@ class CrossPlatformNotifier:
                 import lolka
                 from lolka.ext import commands
                 self.lolka = commands.Bot(command_prefix="!", intents=lolka.Intents.default())
-                self.tasks.append(asyncio.create_task(self.lolka.start(self.lolka_token), name="lolka-notifier"))
+                self.tasks.append(asyncio.create_task(self._run_client("Lolka", self.lolka, self.lolka_token), name="lolka-notifier"))
                 log.info("Lolka notification bot is starting")
             except Exception:
                 log.exception("Could not initialize Lolka notification bot")
+
+    async def _run_client(self, platform: str, client, token: str) -> None:
+        try:
+            await client.start(token)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("%s notification bot stopped unexpectedly", platform)
 
     async def send(self, platform: str, channel_id, message: str) -> None:
         if not channel_id:
@@ -56,7 +64,7 @@ class CrossPlatformNotifier:
         if client is None:
             return
         try:
-            await client.wait_until_ready()
+            await asyncio.wait_for(client.wait_until_ready(), timeout=15)
             channel = client.get_channel(int(str(channel_id).strip()))
             if channel is None:
                 fetch = getattr(client, "fetch_channel", None)
