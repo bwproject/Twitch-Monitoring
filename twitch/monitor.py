@@ -145,8 +145,8 @@ async def send_event(bot, notifier, streamer, event, **values):
             except Exception as exc:
                 logger.error("%s SEND ERROR %s: %s", event.upper(), name, exc)
         if notifier is not None:
-            await notifier.send("discord", channel.get("discord_channel_id"), message)
-            await notifier.send("lolka", channel.get("lolka_channel_id"), message)
+            await notifier.send("discord", channel.get("discord_channel_id") or os.getenv("DISCORD_CHANNEL_ID"), message)
+            await notifier.send("lolka", channel.get("lolka_channel_id") or os.getenv("LOLKA_CHANNEL_ID"), message)
 
 
 
