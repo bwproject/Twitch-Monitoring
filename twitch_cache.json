@@ -1,0 +1,38 @@
+{
+  "the_mr_mes109": {
+    "online": true,
+    "title": "Проходим Elden Ring DLC",
+    "game_name": "Elden Ring",
+    "viewer_count": 148,
+    "started_at": "2026-07-16T00:21:17Z",
+    "thumbnail_url": "https://static-cdn.jtvnw.net/previews-ttv/live_user_the_mr_mes109-{width}x{height}.jpg",
+    "updated_at": 1784182400,
+    "last_notified_start": "2026-07-16T00:21:17Z"
+  },
+  "streamsbyben": {
+    "user_login": "streamsbyben",
+    "user_name": "streamsbyben",
+    "title": "DOOM Eternal. «ДРЕВНИЕ БОГИ» - ЧАСТЬ 1 😇(👹)",
+    "game_name": "DOOM Eternal",
+    "viewer_count": 0,
+    "started_at": "2026-11-22T16:06:03Z",
+    "thumbnail_url": "https://static-cdn.jtvnw.net/previews-ttv/live_user_streamsbyben-{width}x{height}.jpg",
+    "online": true,
+    "offline": false,
+    "last_update": 1795363629.097097,
+    "peak_viewers": 5
+  },
+  "projectbw": {
+    "user_login": "projectbw",
+    "user_name": "projectbw",
+    "title": "Тестим бота",
+    "game_name": "Minecraft",
+    "viewer_count": 0,
+    "started_at": "2026-07-16T16:01:48Z",
+    "thumbnail_url": "https://static-cdn.jtvnw.net/previews-ttv/live_user_projectbw-{width}x{height}.jpg",
+    "online": true,
+    "offline": false,
+    "last_update": 1784217746.1172,
+    "peak_viewers": 0
+  }
+}
