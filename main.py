@@ -1,6 +1,6 @@
 # bot3.py
 
-USE_PROXY = True
+USE_PROXY = os.getenv("USE_PROXY", "false").strip().lower() in ("1", "true", "yes", "on")
 
 import sys
 import os
@@ -41,10 +41,16 @@ from chat import (
     start_chat_bot
 )
 
-from proxsybot import (
-    init_proxy,
-    proxy_watcher
-)
+try:
+    from proxsybot import init_proxy, proxy_watcher
+except ImportError:
+    # Proxy integration is optional; the repository can run without it.
+    async def init_proxy():
+        return None
+
+    async def proxy_watcher():
+        while True:
+            await asyncio.sleep(3600)
 
 
 # ---------------------- ENV ----------------------
