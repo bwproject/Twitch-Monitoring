@@ -120,6 +120,8 @@
       .channel-meta small{max-width:100%}
       .channel-state{flex:0 0 auto}
     }
+    .follow-btn{border:1px solid #8cff0066;background:#8cff0015;color:#d9ffad;border-radius:9px;padding:8px 11px;font-size:12px;font-weight:750;white-space:nowrap;cursor:pointer}.follow-btn:hover{background:#8cff0028;border-color:var(--lime)}
+    .follow-dialog{width:min(520px,calc(100% - 28px));border:1px solid #34415a;border-radius:18px;background:#111a2b;color:#f4f7ff;padding:24px;box-shadow:0 24px 80px #000b}.follow-dialog::backdrop{background:#020617c9;backdrop-filter:blur(5px)}.follow-dialog h3{font-size:21px;margin:0 0 8px}.follow-dialog p{color:#aab6ca;font-size:13px;line-height:1.6}.follow-command{display:flex;align-items:center;gap:10px;padding:11px;margin:10px 0;border:1px solid #26334b;border-radius:11px;background:#080f1d}.follow-command>div{flex:1;min-width:0}.follow-command strong{display:block;font-size:13px}.follow-command code{display:block;color:#b8f87d;overflow-wrap:anywhere;margin-top:5px}.copy-command{border:1px solid #ffffff22;border-radius:8px;background:#ffffff0c;color:#fff;padding:7px 9px;font-size:12px;cursor:pointer}.follow-close{margin-top:10px;width:100%}
     @media(prefers-reduced-motion:reduce){
       *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
     }
@@ -168,6 +170,7 @@
       </section>
     </div>
   </main>
+  <dialog class="follow-dialog" id="followDialog"><h3>Отслеживать <span id="followStreamerName"></span></h3><p>Откройте личную переписку с ботом и отправьте команду. Если вы ещё не запускали бота, сначала нажмите Start или отправьте ему любое сообщение.</p><div class="follow-command"><div><strong>Telegram</strong><code id="telegramFollowCommand"></code></div><button class="copy-command" data-copy="telegramFollowCommand">Копировать</button></div><div class="follow-command"><div><strong>Discord</strong><code id="discordFollowCommand"></code></div><button class="copy-command" data-copy="discordFollowCommand">Копировать</button></div><div class="follow-command"><div><strong>Lolka</strong><code id="lolkaFollowCommand"></code></div><button class="copy-command" data-copy="lolkaFollowCommand">Копировать</button></div><p>Отписка: <code>/unfollow ИМЯ</code> в Telegram или <code>!unfollow ИМЯ</code> в Discord/Lolka. Список подписок: <code>/follows</code> или <code>!follows</code>.</p><button class="follow-btn follow-close" id="closeFollowDialog" type="button">Закрыть</button></dialog>
   <footer><div class="wrap container-xl px-0 foot"><span>© ProjectBW · Twitch Monitoring</span><a href="https://github.com/bwproject/Twitch-Monitoring" target="_blank" rel="noopener noreferrer">GitHub repository ↗</a></div></footer>
 <script>
 const statusLabels={connected:"Подключен",connecting:"Подключается…",starting:"Запускается…",error:"Ошибка подключения",disconnected:"Отключен",stopped:"Остановлен"};
@@ -202,7 +205,7 @@ async function refreshPublicStreamers(){
       const liveNow=item.is_live;
       const avatar=(item.display_name||item.name).slice(0,1).toUpperCase();
       const avatarHtml=item.avatar_url?'<img src="'+escapeHtml(item.avatar_url)+'" alt="" loading="lazy" referrerpolicy="no-referrer">':avatar;
-      return '<a class="channel-row" href="'+escapeHtml(item.url)+'" target="_blank" rel="noopener noreferrer"><span class="channel-avatar">'+avatarHtml+'</span><span class="channel-meta"><strong>'+escapeHtml(item.display_name||item.name)+' <span style="color:#8794aa;font-weight:500">@'+escapeHtml(item.name)+'</span></strong><small>'+ (liveNow?escapeHtml(item.title||"Идёт трансляция")+(item.game_name?" · "+escapeHtml(item.game_name):""):"Сейчас не в эфире")+'</small></span><span class="channel-state '+(liveNow?"live":"")+'">'+(liveNow?"● В ЭФИРЕ":"ОФФЛАЙН")+'</span></a>';
+      return '<div class="channel-row"><a class="channel-avatar" href="'+escapeHtml(item.url)+'" target="_blank" rel="noopener noreferrer">'+avatarHtml+'</a><span class="channel-meta"><strong><a href="'+escapeHtml(item.url)+'" target="_blank" rel="noopener noreferrer">'+escapeHtml(item.display_name||item.name)+'</a> <span style="color:#8794aa;font-weight:500">@'+escapeHtml(item.name)+'</span></strong><small>'+(liveNow?escapeHtml(item.title||"Идёт трансляция")+(item.game_name?" · "+escapeHtml(item.game_name):""):"Сейчас не в эфире")+'</small></span><span class="channel-state '+(liveNow?"live":"")+'">'+(liveNow?"● В ЭФИРЕ":"ОФФЛАЙН")+'</span><button class="follow-btn" type="button" data-follow="'+escapeHtml(item.name)+'">＋ Отслеживать</button></div>';
     }).join(""):'<div class="empty-state">Пока нет подключённых стримеров.</div>';
     const previews=items;
     carousel.innerHTML=previews.length?previews.map(item=>{
@@ -221,6 +224,23 @@ async function refreshPublicStreamers(){
   }
 }
 function escapeHtml(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
+document.addEventListener("click",async event=>{
+  const follow=event.target.closest("[data-follow]");
+  if(follow){
+    const name=follow.dataset.follow;
+    document.getElementById("followStreamerName").textContent="@"+name;
+    document.getElementById("telegramFollowCommand").textContent="/follow "+name;
+    document.getElementById("discordFollowCommand").textContent="!follow "+name;
+    document.getElementById("lolkaFollowCommand").textContent="!follow "+name;
+    document.getElementById("followDialog").showModal();
+  }
+  const copy=event.target.closest("[data-copy]");
+  if(copy){
+    try{await navigator.clipboard.writeText(document.getElementById(copy.dataset.copy).textContent);copy.textContent="Скопировано";}
+    catch{copy.textContent="Скопируйте вручную";}
+  }
+  if(event.target.id==="closeFollowDialog")document.getElementById("followDialog").close();
+});
 refreshPublicStreamers();setInterval(refreshPublicStreamers,30000);
 
 </script>
