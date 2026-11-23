@@ -11,8 +11,8 @@ Telegram-бот и сервис мониторинга Twitch-трансляци
 
 ## Установка
 
-1. Скопируйте `.env.example` в `.env`.
-2. Заполните переменные окружения своими токенами.
+1. Скопируйте `.env.example` в файл `.env` (или задайте те же переменные в панели Pelican).
+2. Заполните в `.env` значения `TELEGRAM_TOKEN`, `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, а для Twitch Chat Bot также `TWITCH_BOT_NICK`, `TWITCH_BOT_ID` и `TWITCH_OAUTH`.
 3. Установите зависимости:
 
 ```bash
@@ -31,14 +31,15 @@ python main.py
 
 ## Безопасность
 
-- Не добавляйте `.env`, OAuth-токены, Telegram-токены или Twitch Client Secret в Git.
-- Используйте переменные окружения панели Pelican либо локальный `.env`.
+- Все секреты Twitch и Telegram читаются из переменных окружения; локально их можно хранить в корневом файле `.env`.
+- Файл `.env` исключён из Git. В репозитории хранится только безопасный шаблон `.env.example`.
+- В Pelican добавьте те же переменные в настройки Environment сервера; сам файл `.env` в GitHub не загружается.
 - Если токен или секрет когда-либо попал в публичный репозиторий, отзовите его и выпустите новый. Удаление файла не удаляет секрет из истории Git.
 
 ## Компоненты
 
 - `main.py` — запуск приложения.
-- `twitch.py`, `twitch_api.py` — мониторинг и Twitch Helix API.
+- `twitch_monitor.py`, `twitch_api.py` — мониторинг и Twitch Helix API.
 - `admin.py`, `command.py` — Telegram-обработчики.
 - `chat.py`, `command_loader.py` — Twitch Chat Bot.
 - `webapp.py`, `twitch/index.html` — API и интерфейс WebApp.

@@ -1,13 +1,16 @@
 # bot3.py
 
-USE_PROXY = os.getenv("USE_PROXY", "false").strip().lower() in ("1", "true", "yes", "on")
-
 import sys
 import os
 import asyncio
 import logging
 
 from dotenv import load_dotenv
+
+# Load local .env before reading any configuration.
+load_dotenv()
+
+USE_PROXY = os.getenv("USE_PROXY", "false").strip().lower() in ("1", "true", "yes", "on")
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
