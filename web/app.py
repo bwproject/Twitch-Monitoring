@@ -85,7 +85,7 @@ def telegram_webapp_user_id(request: Request) -> int | None:
         now = int(time.time())
         if auth_date > now + 30 or now - auth_date > 86400:
             return None
-        check_string = "\\n".join(f"{key}={value}" for key, value in sorted(fields.items()))
+        check_string = "\n".join(f"{key}={value}" for key, value in sorted(fields.items()))
         secret_key = hmac.new(b"WebAppData", token.encode("utf-8"), hashlib.sha256).digest()
         expected_hash = hmac.new(secret_key, check_string.encode("utf-8"), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(expected_hash, received_hash):
