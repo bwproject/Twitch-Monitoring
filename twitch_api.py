@@ -1321,3 +1321,62 @@ def is_new_stream(
 
 
     return True
+
+# ============================================================
+# LIVE ADMIN PREVIEW (NO CACHE)
+# ============================================================
+
+def get_live_preview(name):
+    """Fetch current channel and stream data directly from Twitch Helix."""
+    name = str(name).strip().lower()
+    if not name:
+        raise ValueError("Не указан Twitch-логин")
+
+    twitch = get_twitch_api()
+    if not twitch.client_id or not twitch.client_secret:
+        raise RuntimeError("Не заданы TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET")
+
+    headers = twitch.headers()
+    if not twitch.token:
+        raise RuntimeError("Не удалось получить Twitch API token")
+
+    user_response = requests.get(
+        "https://api.twitch.tv/helix/users",
+        headers=headers,
+        params={"login": name},
+        timeout=10,
+    )
+    if user_response.status_code != 200:
+        raise RuntimeError(f"Twitch Users API: HTTP {user_response.status_code}")
+
+    users = user_response.json().get("data", [])
+    if not users:
+        raise LookupError("Twitch-канал не найден")
+
+    user = users[0]
+    stream_response = requests.get(
+        "https://api.twitch.tv/helix/streams",
+        headers=headers,
+        params={"user_login": name},
+        timeout=10,
+    )
+    if stream_response.status_code != 200:
+        raise RuntimeError(f"Twitch Streams API: HTTP {stream_response.status_code}")
+
+    streams = stream_response.json().get("data", [])
+    stream = normalize_stream(streams[0]) if streams else None
+
+    return {
+        "login": user.get("login", name),
+        "display_name": user.get("display_name", name),
+        "profile_image_url": user.get("profile_image_url", ""),
+        "offline_image_url": user.get("offline_image_url", ""),
+        "is_live": bool(stream),
+        "title": stream.get("title", "") if stream else "",
+        "game_name": stream.get("game_name", "") if stream else "",
+        "viewer_count": stream.get("viewer_count", 0) if stream else 0,
+        "started_at": stream.get("started_at", "") if stream else "",
+        "thumbnail_url": (stream.get("thumbnail_url", "").replace("{width}", "640").replace("{height}", "360") if stream else ""),
+        "url": f"https://twitch.tv/{name}",
+        "fetched_at": time.time(),
+    }

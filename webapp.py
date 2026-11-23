@@ -3,9 +3,11 @@ import json, re, os
 from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse, JSONResponse
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 from web_auth import authenticate, get_session_secret, load_users, save_users
 from runtime_status import snapshot as runtime_status_snapshot
+from twitch_api import get_live_preview
 try:
     from bot3.twitch_api import get_streamer_status
 except ImportError:
@@ -95,6 +97,24 @@ async def admin_streamers(request:Request):
     if user.get("role")!="admin":
         allowed=set(user.get("streamers",[])); items=[x for x in items if str(x.get("name","")).lower() in allowed]
     return [{"name":x.get("name")} for x in items if x.get("name")]
+
+@router.get("/admin/api/twitch/{name}")
+async def admin_twitch_preview(name: str, request: Request):
+    user = require_user(request)
+    if not user:
+        return JSONResponse({"error": "Требуется вход"}, status_code=401)
+    if not can_edit(user, name):
+        return JSONResponse({"error": "Нет доступа к этому стримеру"}, status_code=403)
+    if not re.fullmatch(r"[a-zA-Z0-9_]{1,50}", name):
+        return JSONResponse({"error": "Некорректный Twitch-логин"}, status_code=400)
+    try:
+        return await run_in_threadpool(get_live_preview, name)
+    except LookupError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=404)
+    except Exception as exc:
+        print("[ADMIN TWITCH PREVIEW ERROR]", name, exc)
+        return JSONResponse({"error": str(exc)}, status_code=502)
+
 @router.get("/admin/api/streamer/{name}")
 async def admin_get_streamer(name:str,request:Request):
     user=require_user(request)
