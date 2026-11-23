@@ -1,2 +1,2 @@
-"""Compatibility import; implementation lives in telegram_bot.admin."""
-from telegram_bot.admin import *  # noqa: F401,F403
+"""Compatibility import; implementation lives in bot.telegram.admin."""
+from bot.telegram.admin import *  # noqa: F401,F403

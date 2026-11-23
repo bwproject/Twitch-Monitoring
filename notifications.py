@@ -1,8 +1,8 @@
 """Independent lifecycle and fan-out for optional Discord and Lolka bots."""
 from __future__ import annotations
 import asyncio, html, logging, os, re
-from discord_bot.client import DiscordNotificationClient
-from lolka_bot.client import LolkaNotificationClient
+from bot.discord.client import DiscordNotificationClient
+from bot.lolka.client import LolkaNotificationClient
 from runtime_status import update as update_runtime_status
 log = logging.getLogger("twitch_monitor.notifications")
 def to_platform_text(value: str) -> str:

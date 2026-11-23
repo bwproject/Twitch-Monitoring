@@ -4,16 +4,16 @@
 
 ## Запуск Pelican / Pterodactyl
 
-Команда запуска не меняется: python main.py. В настройках Pelican укажите requirements.txt и AUTO_UPDATE=1.
+Команда запуска не меняется: `python main.py`. В настройках Pelican укажите requirements.txt и AUTO_UPDATE=1.
 
 ## Структура проекта
 
 - main.py — единая точка запуска.
 - paths.py — централизованные пути и миграция старых JSON-файлов.
 - twitch/ — Twitch Helix API, мониторинг, Twitch Chat Bot и его команды.
-- telegram_bot/ — Telegram polling и обработчики.
-- discord_bot/ — отдельный Discord-клиент уведомлений.
-- lolka_bot/ — отдельный Lolka-клиент уведомлений.
+- bot/telegram/ — Telegram polling и обработчики.
+- bot/discord/ — отдельный Discord-клиент уведомлений.
+- bot/lolka/ — отдельный Lolka-клиент уведомлений.
 - web/ — FastAPI, авторизация и HTML-шаблоны.
 - data/ — постоянные данные, отделённые от исходного кода:
   - data/twitch/streamers.json — список стримеров.

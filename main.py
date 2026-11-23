@@ -13,9 +13,9 @@ from aiogram.exceptions import TelegramNetworkError
 from aiogram.fsm.storage.memory import MemoryStorage
 from fastapi import FastAPI
 import uvicorn
-from telegram_bot.admin import register_admin_handlers
-from telegram_bot.commands import register_command_handlers
-from telegram_bot.twitch_api import register_twitch_api_handler
+from bot.telegram.admin import register_admin_handlers
+from bot.telegram.commands import register_command_handlers
+from bot.telegram.twitch_api import register_twitch_api_handler
 from twitch import monitor, watch_streamers_file
 from twitch.chat import start_chat_bot
 from web.app import configure_web_app
