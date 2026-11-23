@@ -17,6 +17,8 @@ ENV_KEYS = {
     "twitch_oauth": "TWITCH_OAUTH",
     "discord_token": "DISCORD_BOT_TOKEN",
     "lolka_token": "LOLKA_BOT_TOKEN",
+    "discord_channel_id": "DISCORD_CHANNEL_ID",
+    "lolka_channel_id": "LOLKA_CHANNEL_ID",
 }
 
 def read_integration_settings() -> dict:
