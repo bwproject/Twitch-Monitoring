@@ -1,45 +1,42 @@
-# command.py
-
+"""Telegram bot commands, including private Twitch subscriptions."""
 from aiogram import types
 from aiogram.filters import Command
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from os import getenv
 from subscriptions import subscribe, unsubscribe, list_subscriptions
 
-def register_command_handlers(dp):
 
+def register_command_handlers(dp):
     @dp.message(Command("start"))
     async def cmd_start(message: types.Message):
         await message.answer(
-            "<b>👋 Привет!</b>\n\n"
-            "Это бот для мониторинга стримеров Twitch.\n\n"
-            "Он автоматически отслеживает:\n"
-            "• начало стрима\n"
-            "• смену названия\n"
-            "• смену категории\n"
-            "• окончание стрима\n\n"
-            "А также отправляет уведомления в выбранные Telegram-чаты.\n\n"
-            "Получайте личные уведомления: /follow ИМЯ\\n"\n            "Управление подписками: /follows, /unfollow ИМЯ\\n\\n"\n            "Посмотри доступные команды: /help",
+            "<b>👋 Привет!</b>\\n\\n"
+            "Это бот для мониторинга стримеров Twitch.\\n\\n"
+            "Получайте личные уведомления о стримах командой /follow ИМЯ.\\n"
+            "Управление подписками: /follows и /unfollow ИМЯ.\\n\\n"
+            "Посмотрите доступные команды: /help",
             parse_mode="HTML"
         )
 
     @dp.message(Command("help"))
     async def cmd_help(message: types.Message):
         await message.answer(
-            "<b>📜 Доступные команды</b>\n\n"
-            "🔧 Управление уведомлениями:\n"
-            "/webadmin"
-            "/streamerslist"
-            "/notify — изменить настройки уведомлений для этого чата\n\n"
-            "📝 Редактирование сообщений стримера:\n"
-            "/edit — изменить шаблоны сообщений стримера\n"
-            "/test ИМЯ — тест всех уведомлений по стримеру\n\n"
-            "ℹ️ Служебные:\n"
-            "/start — информация о боте\n"
-            "/help — список команд\n",
+            "<b>📜 Доступные команды</b>\\n\\n"
+            "🔔 Личные подписки (в личной переписке):\\n"
+            "/follow ИМЯ — подписаться на стримера\\n"
+            "/unfollow ИМЯ — отменить подписку\\n"
+            "/follows — список подписок\\n\\n"
+            "🔧 Управление уведомлениями в чатах:\\n"
+            "/webadmin — открыть панель управления\\n"
+            "/streamerslist — список каналов\\n"
+            "/notify — настройки уведомлений для чата\\n\\n"
+            "📝 Редактирование сообщений стримера:\\n"
+            "/edit — изменить шаблоны\\n"
+            "/test ИМЯ — тест уведомлений\\n\\n"
+            "/start — информация о боте\\n"
+            "/help — список команд",
             parse_mode="HTML"
         )
-
 
     @dp.message(Command("follow"))
     async def cmd_follow(message: types.Message):
@@ -71,35 +68,16 @@ def register_command_handlers(dp):
             await message.reply("Список личных подписок доступен в личных сообщениях.")
             return
         names = list_subscriptions("telegram", message.from_user.id)
-        await message.answer("📺 Ваши подписки:\n" + "\n".join("• @" + name for name in names)
-                             if names else "У вас пока нет подписок. Используйте /follow TwitchЛогин.")
+        if names:
+            text = "📺 Ваши подписки:\\n" + "\\n".join("• @" + name for name in names)
+        else:
+            text = "У вас пока нет подписок. Используйте /follow TwitchЛогин."
+        await message.answer(text)
 
-    # ---------------------------------------------------------
-    # /webadmin
-    # ---------------------------------------------------------
     @dp.message(Command("webadmin"))
     async def cmd_webadmin(message: types.Message):
-
-        WEBAPP_URL = getenv(
-            "TWITCH_WEBAPP_URL",
-            "https://webapp.projectbw.ru/twitch/"
-        )
-
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="📺 Twitch Manager",
-                        web_app=WebAppInfo(
-                            url=WEBAPP_URL
-                        )
-                    )
-                ]
-            ]
-        )
-
-
-        await message.answer(
-            "⚙️ Открыть панель управления Twitch:",
-            reply_markup=keyboard
-        )
+        webapp_url = getenv("TWITCH_WEBAPP_URL", "https://webapp.projectbw.ru/twitch/")
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(text="📺 Twitch Manager", web_app=WebAppInfo(url=webapp_url))
+        ]])
+        await message.answer("⚙️ Открыть панель управления Twitch:", reply_markup=keyboard)
