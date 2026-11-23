@@ -124,18 +124,20 @@ formatter = logging.Formatter(
 )
 
 class ColoredConsoleFormatter(logging.Formatter):
+    """Apply real ANSI escape sequences to console output only."""
     COLORS = {
-        logging.DEBUG: "\\033[90m",
-        logging.INFO: "\\033[32m",
-        logging.WARNING: "\\033[33m",
-        logging.ERROR: "\\033[31m",
-        logging.CRITICAL: "\\033[1;31m",
+        logging.DEBUG: "\033[90m",
+        logging.INFO: "\033[32m",
+        logging.WARNING: "\033[33m",
+        logging.ERROR: "\033[31m",
+        logging.CRITICAL: "\033[1;31m",
     }
-    RESET = "\\033[0m"
+    RESET = "\033[0m"
 
     def format(self, record):
         line = super().format(record)
-        return f"{self.COLORS.get(record.levelno, '')}{line}{self.RESET}"
+        color = self.COLORS.get(record.levelno, "")
+        return f"{color}{line}{self.RESET if color else ''}"
 
 file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
 file_handler.setFormatter(formatter)
