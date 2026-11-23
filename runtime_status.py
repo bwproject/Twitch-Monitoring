@@ -5,6 +5,8 @@ STATUS = {
     "telegram": {"state": "starting", "label": None, "error": None},
     "twitch_chat": {"state": "starting", "username": None, "channels": [], "error": None},
     "twitch_monitor": {"state": "starting", "last_check": None, "streamers": [], "error": None},
+    "discord": {"state": "starting", "username": None, "error": None},
+    "lolka": {"state": "starting", "username": None, "error": None},
 }
 
 def update(service, **values):
