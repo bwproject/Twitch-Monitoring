@@ -157,7 +157,7 @@ Twitch-Monitoring/
 ├── paths.py                 # Пути и подготовка каталога данных
 ├── runtime_config.py        # Настройки интеграций
 ├── runtime_status.py        # Состояние запущенных компонентов
-├── notifications.py         # Отправка уведомлений на платформы
+├── notifications.py         # Отправка уведомлений на платформы\n├── subscriptions.py         # Личные подписки на стримеров
 │
 ├── twitch/
 │   ├── api.py               # Twitch Helix API и данные трансляций
