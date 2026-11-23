@@ -135,6 +135,8 @@ async def send_event(bot, notifier, streamer, event, **values):
         return
     if notifier is not None:
         await notifier.send_personal_event(name, message, telegram_bot=bot)
+    discord_channel_configured = False
+    lolka_channel_configured = False
     for channel in streamer.get("channels", []):
         if not channel.get(f"notify_{event}", True):
             continue
@@ -145,8 +147,21 @@ async def send_event(bot, notifier, streamer, event, **values):
             except Exception as exc:
                 logger.error("%s SEND ERROR %s: %s", event.upper(), name, exc)
         if notifier is not None:
-            await notifier.send("discord", channel.get("discord_channel_id") or os.getenv("DISCORD_CHANNEL_ID"), message)
-            await notifier.send("lolka", channel.get("lolka_channel_id") or os.getenv("LOLKA_CHANNEL_ID"), message)
+            discord_channel_id = channel.get("discord_channel_id")
+            lolka_channel_id = channel.get("lolka_channel_id")
+            if discord_channel_id:
+                discord_channel_configured = True
+                await notifier.send("discord", discord_channel_id, message)
+            if lolka_channel_id:
+                lolka_channel_configured = True
+                await notifier.send("lolka", lolka_channel_id, message)
+
+    # Global destinations are used once per event when no per-streamer destination exists.
+    if notifier is not None:
+        if not discord_channel_configured:
+            await notifier.send("discord", os.getenv("DISCORD_CHANNEL_ID"), message)
+        if not lolka_channel_configured:
+            await notifier.send("lolka", os.getenv("LOLKA_CHANNEL_ID"), message)
 
 
 
