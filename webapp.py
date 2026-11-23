@@ -7,11 +7,10 @@ from starlette.concurrency import run_in_threadpool
 from starlette.middleware.sessions import SessionMiddleware
 from web_auth import authenticate, get_session_secret, load_users, save_users
 from runtime_status import snapshot as runtime_status_snapshot
-from twitch_api import get_live_preview
 try:
-    from bot3.twitch_api import get_streamer_status
+    from bot3.twitch_api import get_streamer_status, get_live_preview
 except ImportError:
-    from twitch_api import get_streamer_status
+    from twitch_api import get_streamer_status, get_live_preview
 BASE_DIR=Path(__file__).resolve().parent
 STREAMERS_FILE=BASE_DIR/"streamers.json"
 ADMIN_HTML=BASE_DIR/"twitch"/"admin.html"

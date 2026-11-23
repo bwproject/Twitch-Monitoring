@@ -21,13 +21,13 @@ function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&'
 function safeTelegramHtml(template,values){
   let output=String(template||'');
   for(const [key,value] of Object.entries(values)) output=output.replaceAll('{'+key+'}',escapeHtml(value));
-  output=output.replace(/<a\\s+href=["']([^"']+)["']\\s*>/gi,(match,href)=>{
-    const safe=/^https:\\/\\/twitch\\.tv\\/[a-zA-Z0-9_]+$/i.test(href)?href:'#';
+  output=output.replace(/<a\s+href=["']([^"']+)["']\s*>/gi,(match,href)=>{
+    const safe=/^https:\/\/twitch\.tv\/[a-zA-Z0-9_]+$/i.test(href)?href:'#';
     return '<a href="'+safe+'" target="_blank" rel="noopener noreferrer">';
   });
-  output=output.replace(/<\\/?(b|strong|i|em|u|s|code|pre)>/gi,tag=>tag.toLowerCase());
-  output=output.replace(/<\\/?(?!b\\b|strong\\b|i\\b|em\\b|u\\b|s\\b|code\\b|pre\\b|a\\b)[a-z][^>]*>/gi,'');
-  return output.replace(/\\n/g,'<br>');
+  output=output.replace(/<\/?(b|strong|i|em|u|s|code|pre)>/gi,tag=>tag.toLowerCase());
+  output=output.replace(/<\/?(?!b\b|strong\b|i\b|em\b|u\b|s\b|code\b|pre\b|a\b)[a-z][^>]*>/gi,'');
+  return output.replace(/\n/g,'<br>');
 }
 function updateTelegramPreview(){
   if(!data)return;
