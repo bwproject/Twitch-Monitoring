@@ -1,5 +1,6 @@
 from __future__ import annotations
-import json, re, os
+import json, re, os, uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse, JSONResponse
@@ -15,6 +16,7 @@ except ImportError:
 BASE_DIR=Path(__file__).resolve().parent
 STREAMERS_FILE=BASE_DIR/"streamers.json"
 ADMIN_HTML=BASE_DIR/"twitch"/"admin.html"
+APPLICATIONS_FILE=Path(os.getenv("BOT_DATA_DIR", str(BASE_DIR / "data"))).resolve()/"applications.json"
 router=APIRouter()
 def configure_web_app(app):
     app.add_middleware(SessionMiddleware,secret_key=get_session_secret(),session_cookie="twitch_admin_session",
@@ -68,6 +70,9 @@ async def admin_runtime_status(request: Request):
     if not require_user(request):
         return JSONResponse({"error": "Требуется вход"}, status_code=401)
     return runtime_status_snapshot()
+
+@router.get("/apply", include_in_schema=False)
+async def application_page(): return FileResponse(BASE_DIR / "apply.html")
 
 @router.get("/admin",include_in_schema=False)
 @router.get("/admin/login",include_in_schema=False)
@@ -163,7 +168,7 @@ async def admin_update_integration_settings(request: Request):
         clear = data.get("clear", [])
         if not isinstance(values, dict) or not isinstance(clear, list):
             raise ValueError("Некорректный формат настроек")
-        allowed = {"telegram_token", "twitch_client_id", "twitch_client_secret", "twitch_bot_nick", "twitch_bot_id", "twitch_oauth"}
+        allowed = {"telegram_token", "twitch_client_id", "twitch_client_secret", "twitch_bot_nick", "twitch_bot_id", "twitch_oauth", "discord_token", "lolka_token"}
         if any(key not in allowed for key in values) or any(key not in allowed for key in clear):
             raise ValueError("Неизвестный параметр")
         if any(not isinstance(value, str) for value in values.values()):
@@ -172,8 +177,70 @@ async def admin_update_integration_settings(request: Request):
         return {"ok": True, "configured": {key: bool(saved.get(key) or os.getenv(env_name)) for key, env_name in {
             "telegram_token": "TELEGRAM_TOKEN", "twitch_client_id": "TWITCH_CLIENT_ID",
             "twitch_client_secret": "TWITCH_CLIENT_SECRET", "twitch_bot_nick": "TWITCH_BOT_NICK",
-            "twitch_bot_id": "TWITCH_BOT_ID", "twitch_oauth": "TWITCH_OAUTH"
+            "twitch_bot_id": "TWITCH_BOT_ID", "twitch_oauth": "TWITCH_OAUTH", "discord_token": "DISCORD_BOT_TOKEN", "lolka_token": "LOLKA_BOT_TOKEN"
         }.items()}, "restart_required": True}
+    except (ValueError, TypeError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+
+@router.post("/api/applications")
+async def submit_application(request: Request):
+    try:
+        data = await request.json()
+        if not isinstance(data, dict):
+            raise ValueError("Некорректная заявка")
+        twitch_login = str(data.get("twitch_login", "")).strip()
+        contact = str(data.get("contact", "")).strip()
+        if not re.fullmatch(r"[A-Za-z0-9_]{1,50}", twitch_login):
+            raise ValueError("Укажите корректный Twitch-логин")
+        if not contact or len(contact) > 160:
+            raise ValueError("Укажите контакт для обратной связи")
+        platform = str(data.get("platform", "telegram"))
+        if platform not in {"telegram", "discord", "lolka", "all"}:
+            raise ValueError("Неизвестная платформа")
+        items = load_json(APPLICATIONS_FILE)
+        if not isinstance(items, list):
+            items = []
+        item = {"id": uuid.uuid4().hex[:12], "created_at": datetime.now(timezone.utc).isoformat(),
+                "twitch_login": twitch_login, "contact": contact, "platform": platform,
+                "channel": str(data.get("channel", "")).strip()[:200],
+                "message": str(data.get("message", "")).strip()[:1000], "status": "new"}
+        items.append(item)
+        save_json(APPLICATIONS_FILE, items)
+        return {"ok": True, "id": item["id"]}
+    except (ValueError, TypeError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
+
+@router.get("/admin/api/applications")
+async def admin_applications(request: Request):
+    user = require_user(request)
+    if not user:
+        return JSONResponse({"error": "Требуется вход"}, status_code=401)
+    if user.get("role") != "admin":
+        return JSONResponse({"error": "Только администратор"}, status_code=403)
+    items = load_json(APPLICATIONS_FILE)
+    return items if isinstance(items, list) else []
+
+@router.post("/admin/api/applications/{application_id}/status")
+async def admin_application_status(application_id: str, request: Request):
+    user = require_user(request)
+    if not user:
+        return JSONResponse({"error": "Требуется вход"}, status_code=401)
+    if user.get("role") != "admin":
+        return JSONResponse({"error": "Только администратор"}, status_code=403)
+    try:
+        data = await request.json()
+        status = str(data.get("status", ""))
+        if status not in {"new", "reviewing", "accepted", "rejected"}:
+            raise ValueError("Недопустимый статус")
+        items = load_json(APPLICATIONS_FILE)
+        if not isinstance(items, list):
+            items = []
+        target = next((x for x in items if x.get("id") == application_id), None)
+        if target is None:
+            return JSONResponse({"error": "Заявка не найдена"}, status_code=404)
+        target["status"] = status
+        save_json(APPLICATIONS_FILE, items)
+        return {"ok": True}
     except (ValueError, TypeError) as exc:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
 
