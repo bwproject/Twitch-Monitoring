@@ -346,7 +346,7 @@ async def admin_update_integration_settings(request: Request):
         clear = data.get("clear", [])
         if not isinstance(values, dict) or not isinstance(clear, list):
             raise ValueError("Некорректный формат настроек")
-        allowed = {"telegram_token", "twitch_client_id", "twitch_client_secret", "twitch_bot_nick", "twitch_bot_id", "twitch_oauth", "discord_token", "lolka_token"}
+        allowed = {"telegram_token", "twitch_client_id", "twitch_client_secret", "twitch_bot_nick", "twitch_bot_id", "twitch_oauth", "discord_token", "lolka_token", "discord_channel_id", "lolka_channel_id"}
         if any(key not in allowed for key in values) or any(key not in allowed for key in clear):
             raise ValueError("Неизвестный параметр")
         if any(not isinstance(value, str) for value in values.values()):
@@ -355,7 +355,8 @@ async def admin_update_integration_settings(request: Request):
         return {"ok": True, "configured": {key: bool(saved.get(key) or os.getenv(env_name)) for key, env_name in {
             "telegram_token": "TELEGRAM_TOKEN", "twitch_client_id": "TWITCH_CLIENT_ID",
             "twitch_client_secret": "TWITCH_CLIENT_SECRET", "twitch_bot_nick": "TWITCH_BOT_NICK",
-            "twitch_bot_id": "TWITCH_BOT_ID", "twitch_oauth": "TWITCH_OAUTH", "discord_token": "DISCORD_BOT_TOKEN", "lolka_token": "LOLKA_BOT_TOKEN"
+            "twitch_bot_id": "TWITCH_BOT_ID", "twitch_oauth": "TWITCH_OAUTH", "discord_token": "DISCORD_BOT_TOKEN", "lolka_token": "LOLKA_BOT_TOKEN",
+            "discord_channel_id": "DISCORD_CHANNEL_ID", "lolka_channel_id": "LOLKA_CHANNEL_ID"
         }.items()}, "restart_required": True}
     except (ValueError, TypeError) as exc:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
