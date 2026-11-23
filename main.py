@@ -16,6 +16,8 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.exceptions import TelegramNetworkError
+from fastapi import FastAPI
+import uvicorn
 
 
 # ---------------------- PATH ----------------------
@@ -43,6 +45,8 @@ from twitch import (
 from chat import (
     start_chat_bot
 )
+
+from webapp import router as webapp_router
 
 try:
     from proxsybot import init_proxy, proxy_watcher
@@ -80,6 +84,9 @@ CHECK_INTERVAL = int(
         30
     )
 )
+
+WEB_HOST = os.getenv("WEB_HOST", "0.0.0.0")
+WEB_PORT = int(os.getenv("WEB_PORT", "1047"))
 
 
 # ---------------------- LOGGER ----------------------
@@ -264,6 +271,15 @@ async def main():
         "BOT BW STARTED"
     )
 
+    # Run the WebApp API in parallel with Telegram and Twitch workers.
+    web_app = FastAPI(title="Twitch Monitoring API")
+    web_app.include_router(webapp_router)
+    web_server = uvicorn.Server(
+        uvicorn.Config(web_app, host=WEB_HOST, port=WEB_PORT, log_level="info")
+    )
+    web_task = asyncio.create_task(web_server.serve())
+    logger.info("Web API listening on %s:%s", WEB_HOST, WEB_PORT)
+
 
     if USE_PROXY:
 
@@ -369,6 +385,8 @@ async def main():
 
     finally:
 
+        web_server.should_exit = True
+        await web_task
         await bot.session.close()
 
 
