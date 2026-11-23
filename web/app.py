@@ -246,10 +246,10 @@ async def admin_add_streamer(request: Request):
             "preview": True,
             "channels": [],
             "messages": {
-                "start": "🟢 <b><a href=\"{url}\">{name}</a></b> начал трансляцию!\\n🟢 Категория: <b>{game}</b>\\n🟢 Название: <i>{title}</i>",
-                "title_change": "Сменил название: <b><a href=\"{url}\">{name}</a></b>\\nС \"<i>{old_title}</i>\" на \"<i>{title}</i>\"",
-                "game_change": "Сменил категорию: <b><a href=\"{url}\">{name}</a></b>\\nС \"<b>{old_game}</b>\" на \"<b>{game}</b>\"",
-                "end": "🔴 <b><a href=\"{url}\">{name}</a></b> завершил трансляцию.\\nДлительность: <b>{duration}</b>\\nПиковый онлайн: <b>{peak_viewers}</b>"
+                "start": "🟢 <b><a href=\"{url}\">{name}</a></b> начал трансляцию!\n🟢 Категория: <b>{game}</b>\n🟢 Название: <i>{title}</i>",
+                "title_change": "Сменил название: <b><a href=\"{url}\">{name}</a></b>\nС \"<i>{old_title}</i>\" на \"<i>{title}</i>\"",
+                "game_change": "Сменил категорию: <b><a href=\"{url}\">{name}</a></b>\nС \"<b>{old_game}</b>\" на \"<b>{game}</b>\"",
+                "end": "🔴 <b><a href=\"{url}\">{name}</a></b> завершил трансляцию.\nДлительность: <b>{duration}</b>\nПиковый онлайн: <b>{peak_viewers}</b>"
             }
         }
 
