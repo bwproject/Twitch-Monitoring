@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json, re
+import json, re, os
 from pathlib import Path
 from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse, JSONResponse
@@ -15,7 +15,7 @@ ADMIN_HTML=BASE_DIR/"twitch"/"admin.html"
 router=APIRouter()
 def configure_web_app(app):
     app.add_middleware(SessionMiddleware,secret_key=get_session_secret(),session_cookie="twitch_admin_session",
-                       same_site="lax",https_only=True,max_age=43200)
+                       same_site="lax",https_only=os.getenv("WEB_COOKIE_SECURE", "false").strip().lower() in ("1", "true", "yes", "on"),max_age=43200)
     app.include_router(router)
 def current_user(request): return request.session.get("user")
 def require_user(request): return current_user(request)

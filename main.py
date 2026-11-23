@@ -118,31 +118,34 @@ formatter = logging.Formatter(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
+class ColoredConsoleFormatter(logging.Formatter):
+    COLORS = {
+        logging.DEBUG: "\\033[90m",
+        logging.INFO: "\\033[32m",
+        logging.WARNING: "\\033[33m",
+        logging.ERROR: "\\033[31m",
+        logging.CRITICAL: "\\033[1;31m",
+    }
+    RESET = "\\033[0m"
 
-file_handler = logging.FileHandler(
-    LOG_FILE,
-    encoding="utf-8"
-)
+    def format(self, record):
+        line = super().format(record)
+        return f"{self.COLORS.get(record.levelno, '')}{line}{self.RESET}"
 
-file_handler.setFormatter(
-    formatter
-)
+file_handler = logging.FileHandler(LOG_FILE, encoding="utf-8")
+file_handler.setFormatter(formatter)
 
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setFormatter(ColoredConsoleFormatter(
+    "[%(asctime)s] %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+))
 
-console_handler = logging.StreamHandler()
-
-console_handler.setFormatter(
-    formatter
-)
-
-
-logger.addHandler(
-    file_handler
-)
-
-logger.addHandler(
-    console_handler
-)
+# Avoid duplicate log lines if the module is reloaded.
+logger.handlers.clear()
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+logger.propagate = False
 
 
 
@@ -275,7 +278,7 @@ async def main():
     web_app = FastAPI(title="Twitch Monitoring API")
     configure_web_app(web_app)
     web_server = uvicorn.Server(
-        uvicorn.Config(web_app, host=WEB_HOST, port=WEB_PORT, log_level="info")
+        uvicorn.Config(web_app, host=WEB_HOST, port=WEB_PORT, log_level="info", use_colors=True)
     )
     web_task = asyncio.create_task(web_server.serve())
     logger.info("Web API listening on %s:%s", WEB_HOST, WEB_PORT)
