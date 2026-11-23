@@ -135,7 +135,7 @@ async def admin_runtime_status(request: Request):
 
 @router.get("/public/streamers", include_in_schema=False)
 async def public_streamers():
-    """Public list of configured Twitch channels with their current live status."""
+    """Public list of configured Twitch channels, profile images and live/offline previews."""
     items = load_streamers()
     names = []
     for item in items:
@@ -146,27 +146,45 @@ async def public_streamers():
             names.append(name)
     if not names:
         return {"streamers": [], "live": []}
+
+    api = __import__("twitch.api", fromlist=["get_streamers_status", "get_twitch_api"])
     try:
-        statuses = await run_in_threadpool(__import__("twitch.api", fromlist=["get_streamers_status"]).get_streamers_status, names)
+        statuses = await run_in_threadpool(api.get_streamers_status, names)
     except Exception as exc:
-        print("[PUBLIC STREAMERS ERROR]", exc)
+        print("[PUBLIC STREAMERS STATUS ERROR]", exc)
         statuses = {}
+
+    # Helix /users provides profile avatars and optional offline channel banners.
+    try:
+        users = await run_in_threadpool(api.get_twitch_api().fetch_users, names)
+    except Exception as exc:
+        print("[PUBLIC STREAMERS USERS ERROR]", exc)
+        users = {}
+
     result = []
     for name in names:
         status = statuses.get(name) or {}
+        profile = users.get(name) or {}
         online = bool(status.get("online") or (status.get("offline") is False and status.get("started_at")))
-        thumb = str(status.get("thumbnail_url") or "")
-        if thumb:
-            thumb = thumb.replace("{width}", "640").replace("{height}", "360")
+        live_thumb = str(status.get("thumbnail_url") or "")
+        if live_thumb:
+            live_thumb = live_thumb.replace("{width}", "640").replace("{height}", "360")
+
+        avatar = str(profile.get("profile_image_url") or status.get("profile_image_url") or "")
+        offline_preview = str(profile.get("offline_image_url") or status.get("offline_image_url") or "")
+        # A profile avatar is a reliable fallback when a channel has no custom offline banner.
+        preview = live_thumb if online and live_thumb else (offline_preview or avatar)
         result.append({
             "name": name,
-            "display_name": status.get("user_name") or status.get("user_login") or name,
+            "display_name": profile.get("display_name") or status.get("user_name") or status.get("user_login") or name,
             "is_live": online,
             "title": status.get("title") or "",
             "game_name": status.get("game_name") or "",
             "viewer_count": int(status.get("viewer_count") or 0),
             "started_at": status.get("started_at") or "",
-            "thumbnail_url": thumb,
+            "avatar_url": avatar,
+            "thumbnail_url": live_thumb,
+            "preview_url": preview,
             "url": f"https://twitch.tv/{name}",
         })
     return {"streamers": result, "live": [item for item in result if item["is_live"]]}
