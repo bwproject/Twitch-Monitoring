@@ -221,6 +221,60 @@ async def admin_streamers(request:Request):
         allowed=set(user.get("streamers",[])); items=[x for x in items if str(x.get("name","")).lower() in allowed]
     return [{"name":x.get("name")} for x in items if x.get("name")]
 
+@router.post("/admin/api/streamers")
+async def admin_add_streamer(request: Request):
+    user = require_user(request)
+    if not user:
+        return JSONResponse({"error": "Требуется вход"}, status_code=401)
+    if user.get("role") != "admin":
+        return JSONResponse({"error": "Добавлять Twitch-каналы может только администратор"}, status_code=403)
+
+    try:
+        payload = await request.json()
+        name = str(payload.get("name", "")).strip().lstrip("@").lower()
+        if not re.fullmatch(r"[a-z0-9_]{1,25}", name):
+            raise ValueError("Укажите корректный Twitch-логин (латинские буквы, цифры и _, до 25 символов).")
+
+        existing = load_streamers()
+        if any(str(item.get("name", "")).lower() == name for item in existing):
+            return JSONResponse({"error": f"Канал @{name} уже добавлен."}, status_code=409)
+
+        # Confirm that this login is a real Twitch account before writing any files.
+        preview = await run_in_threadpool(get_live_preview, name)
+        streamer = {
+            "name": preview.get("login", name),
+            "preview": True,
+            "channels": [],
+            "messages": {
+                "start": "🟢 <b><a href=\"{url}\">{name}</a></b> начал трансляцию!\\n🟢 Категория: <b>{game}</b>\\n🟢 Название: <i>{title}</i>",
+                "title_change": "Сменил название: <b><a href=\"{url}\">{name}</a></b>\\nС \"<i>{old_title}</i>\" на \"<i>{title}</i>\"",
+                "game_change": "Сменил категорию: <b><a href=\"{url}\">{name}</a></b>\\nС \"<b>{old_game}</b>\" на \"<b>{game}</b>\"",
+                "end": "🔴 <b><a href=\"{url}\">{name}</a></b> завершил трансляцию.\\nДлительность: <b>{duration}</b>\\nПиковый онлайн: <b>{peak_viewers}</b>"
+            }
+        }
+
+        config_file = get_streamer_file(name)
+        if config_file.exists():
+            return JSONResponse({"error": "Файл настроек этого канала уже существует. Проверьте конфигурацию."}, status_code=409)
+
+        save_json(config_file, streamer)
+        try:
+            existing.append({"name": streamer["name"], "preview": True, "channels": [], "messages": streamer["messages"]})
+            save_json(STREAMERS_FILE, existing)
+        except Exception:
+            config_file.unlink(missing_ok=True)
+            raise
+
+        return {"ok": True, "streamer": {"name": streamer["name"]}, "twitch": preview}
+    except LookupError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=404)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except Exception as exc:
+        print("[ADMIN ADD STREAMER ERROR]", exc)
+        return JSONResponse({"error": "Не удалось добавить канал. Проверьте настройки Twitch API и журнал сервера."}, status_code=502)
+
+
 @router.get("/admin/api/twitch/{name}")
 async def admin_twitch_preview(name: str, request: Request):
     user = require_user(request)
