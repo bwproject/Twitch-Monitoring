@@ -9,10 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from web.auth import authenticate, get_session_secret, load_users, save_users
 from runtime_status import snapshot as runtime_status_snapshot
 from runtime_config import save_integration_settings, integration_status
-try:
-    from bot3.twitch_api import get_streamer_status, get_live_preview
-except ImportError:
-    from twitch_api import get_streamer_status, get_live_preview
+from twitch.api import get_streamer_status, get_live_preview
 from paths import ROOT_DIR, TWITCH_STREAMERS_FILE, TWITCH_STREAMER_CONFIG_DIR, APPLICATIONS_FILE, TEMPLATES_DIR
 
 BASE_DIR = ROOT_DIR
