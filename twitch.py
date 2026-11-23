@@ -131,11 +131,38 @@ async def watch_streamers_file(interval=5):
 # MONITOR
 # ============================================================
 
+async def send_event(bot, notifier, streamer, event, **values):
+    """Send a Twitch event to all configured Telegram, Discord and Lolka destinations."""
+    name = str(streamer.get("name", "")).lower()
+    template = streamer.get("messages", {}).get(event, "")
+    if not template:
+        return
+    try:
+        message = template.format(name=name, url=f"https://twitch.tv/{name}", **values)
+    except (KeyError, ValueError) as exc:
+        logger.error("MESSAGE TEMPLATE ERROR %s/%s: %s", name, event, exc)
+        return
+    for channel in streamer.get("channels", []):
+        if not channel.get(f"notify_{event}", True):
+            continue
+        chat_id = channel.get("chat_id")
+        if chat_id:
+            try:
+                await bot.send_message(chat_id, message, parse_mode="HTML")
+            except Exception as exc:
+                logger.error("%s SEND ERROR %s: %s", event.upper(), name, exc)
+        if notifier is not None:
+            await notifier.send("discord", channel.get("discord_channel_id"), message)
+            await notifier.send("lolka", channel.get("lolka_channel_id"), message)
+
+
+
 async def monitor(
     bot: Bot,
     client_id,
     client_secret,
-    interval=30
+    interval=30,
+    notifier=None
 ):
 
     state = {}
@@ -265,49 +292,17 @@ async def monitor(
                         st["peak_viewers"] = viewers
 
 
-                        for ch in streamer.get(
-                            "channels",
-                            []
-                        ):
-
-                            if not ch.get(
-                                "notify_start",
-                                True
-                            ):
-                                continue
-
-
-                            try:
-
-                                await bot.send_message(
-
-                                    ch["chat_id"],
-
-                                    messages.get(
-                                        "start",
-                                        ""
-                                    ).format(
-                                        name=name,
-                                        title=title,
-                                        game=game,
-                                        url=url
-                                    ),
-
-                                    parse_mode="HTML"
-
-                                )
-
-                            except Exception as e:
-
-                                logger.error(
-                                    f"START SEND ERROR {name}: {e}"
-                                )
+                        await send_event(bot, notifier, streamer, "start", title=title, game=game)
 
                     else:
-
+                        if title != st["title"]:
+                            logger.info("TITLE CHANGE %s", name)
+                            await send_event(bot, notifier, streamer, "title_change", old_title=st["title"], title=title, old_game=st["game"], game=game)
+                        if game != st["game"]:
+                            logger.info("GAME CHANGE %s", name)
+                            await send_event(bot, notifier, streamer, "game_change", old_title=st["title"], title=title, old_game=st["game"], game=game)
                         st["title"] = title
                         st["game"] = game
-
                         if viewers > st["peak_viewers"]:
                             st["peak_viewers"] = viewers
                 # ==================================================
@@ -352,50 +347,7 @@ async def monitor(
                     )
 
 
-                    for ch in streamer.get(
-                        "channels",
-                        []
-                    ):
-
-                        if not ch.get(
-                            "notify_end",
-                            True
-                        ):
-                            continue
-
-
-                        try:
-
-                            await bot.send_message(
-
-                                ch["chat_id"],
-
-                                messages.get(
-                                    "end",
-                                    ""
-                                ).format(
-
-                                    name=name,
-
-                                    title=st["title"],
-
-                                    duration=dur,
-
-                                    peak_viewers=st["peak_viewers"],
-
-                                    url=url
-
-                                ),
-
-                                parse_mode="HTML"
-
-                            )
-
-                        except Exception as e:
-
-                            logger.error(
-                                f"END SEND ERROR {name}: {e}"
-                            )
+                    await send_event(bot, notifier, streamer, "end", title=st["title"], duration=dur, peak_viewers=st["peak_viewers"])
 
 
                     st["online"] = False
