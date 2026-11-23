@@ -242,6 +242,7 @@ class TwitchChatBot(
         self.bot_nick = BOT_NICK
 
         self.commands_cache = {}
+        self.connected_channels = set()
 
 
 
@@ -253,7 +254,7 @@ class TwitchChatBot(
         self
     ):
 
-        update_runtime_status("twitch_chat", state="connected", username=self.bot_nick, channels=load_channels(), error=None)
+        update_runtime_status("twitch_chat", state="connected", username=self.bot_nick, channels=sorted(self.connected_channels), error=None)
         logger.info(
             "✅ Успешная авторизация Twitch"
         )
@@ -287,9 +288,8 @@ class TwitchChatBot(
         )
 
 
-        channels = set(load_channels())
-        channels.add(name)
-        update_runtime_status("twitch_chat", state="connected", channels=sorted(channels), error=None)
+        self.connected_channels.add(name)
+        update_runtime_status("twitch_chat", state="connected", channels=sorted(self.connected_channels), error=None)
         logger.info(
             f"✅ Подключен к чату стримера: {name}"
         )
@@ -299,6 +299,13 @@ class TwitchChatBot(
             f"Команды: {list(self.commands_cache[name].keys())}"
         )
 
+
+
+    async def event_left_channel(self, channel):
+        name = channel.name.lower()
+        self.connected_channels.discard(name)
+        update_runtime_status("twitch_chat", state="connected", channels=sorted(self.connected_channels), error=None)
+        logger.info(f"Отключен от чата стримера: {name}")
 
 
     # ========================================================
