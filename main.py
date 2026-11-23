@@ -10,6 +10,10 @@ from dotenv import load_dotenv
 # Load local .env before reading any configuration.
 load_dotenv()
 
+# Load credentials saved through the admin panel before importing bot modules.
+from runtime_config import apply_integration_settings
+apply_integration_settings()
+
 USE_PROXY = os.getenv("USE_PROXY", "false").strip().lower() in ("1", "true", "yes", "on")
 
 from aiogram import Bot, Dispatcher
