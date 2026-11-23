@@ -18,8 +18,7 @@ class LolkaNotificationClient:
         async def on_message(message):
             if getattr(message.author, "bot", False):
                 return
-            is_private = getattr(message.channel, "type", None)
-            if getattr(is_private, "name", "") not in ("private", "dm") and not getattr(message.channel, "is_private", False):
+            if getattr(message, "guild", None) is not None:
                 return
             parts = (getattr(message, "content", "") or "").strip().split(maxsplit=1)
             if not parts:
