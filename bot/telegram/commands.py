@@ -10,10 +10,10 @@ def register_command_handlers(dp):
     @dp.message(Command("start"))
     async def cmd_start(message: types.Message):
         await message.answer(
-            "<b>👋 Привет!</b>\\n\\n"
-            "Это бот для мониторинга стримеров Twitch.\\n\\n"
-            "Получайте личные уведомления о стримах командой /follow ИМЯ.\\n"
-            "Управление подписками: /follows и /unfollow ИМЯ.\\n\\n"
+            "<b>👋 Привет!</b>\n\n"
+            "Это бот для мониторинга стримеров Twitch.\n\n"
+            "Получайте личные уведомления о стримах командой /follow ИМЯ.\n"
+            "Управление подписками: /follows и /unfollow ИМЯ.\n\n"
             "Посмотрите доступные команды: /help",
             parse_mode="HTML"
         )
@@ -21,19 +21,19 @@ def register_command_handlers(dp):
     @dp.message(Command("help"))
     async def cmd_help(message: types.Message):
         await message.answer(
-            "<b>📜 Доступные команды</b>\\n\\n"
-            "🔔 Личные подписки (в личной переписке):\\n"
-            "/follow ИМЯ — подписаться на стримера\\n"
-            "/unfollow ИМЯ — отменить подписку\\n"
-            "/follows — список подписок\\n\\n"
-            "🔧 Управление уведомлениями в чатах:\\n"
-            "/webadmin — открыть панель управления\\n"
-            "/streamerslist — список каналов\\n"
-            "/notify — настройки уведомлений для чата\\n\\n"
-            "📝 Редактирование сообщений стримера:\\n"
-            "/edit — изменить шаблоны\\n"
-            "/test ИМЯ — тест уведомлений\\n\\n"
-            "/start — информация о боте\\n"
+            "<b>📜 Доступные команды</b>\n\n"
+            "🔔 Личные подписки (в личной переписке):\n"
+            "/follow ИМЯ — подписаться на стримера\n"
+            "/unfollow ИМЯ — отменить подписку\n"
+            "/follows — список подписок\n\n"
+            "🔧 Управление уведомлениями в чатах:\n"
+            "/webadmin — открыть панель управления\n"
+            "/streamerslist — список каналов\n"
+            "/notify — настройки уведомлений для чата\n\n"
+            "📝 Редактирование сообщений стримера:\n"
+            "/edit — изменить шаблоны\n"
+            "/test ИМЯ — тест уведомлений\n\n"
+            "/start — информация о боте\n"
             "/help — список команд",
             parse_mode="HTML"
         )
@@ -69,7 +69,7 @@ def register_command_handlers(dp):
             return
         names = list_subscriptions("telegram", message.from_user.id)
         if names:
-            text = "📺 Ваши подписки:\\n" + "\\n".join("• @" + name for name in names)
+            text = "📺 Ваши подписки:\n" + "\n".join("• @" + name for name in names)
         else:
             text = "У вас пока нет подписок. Используйте /follow TwitchЛогин."
         await message.answer(text)
