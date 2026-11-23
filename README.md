@@ -157,7 +157,8 @@ Twitch-Monitoring/
 ├── paths.py                 # Пути и подготовка каталога данных
 ├── runtime_config.py        # Настройки интеграций
 ├── runtime_status.py        # Состояние запущенных компонентов
-├── notifications.py         # Отправка уведомлений на платформы\n├── subscriptions.py         # Личные подписки на стримеров
+├── notifications.py         # Отправка уведомлений на платформы
+├── subscriptions.py         # Личные подписки на стримеров
 │
 ├── twitch/
 │   ├── api.py               # Twitch Helix API и данные трансляций
@@ -195,7 +196,7 @@ Twitch-Monitoring/
 | `data/twitch/cache.json` | Кэш Twitch |
 | `data/twitch/chat/` | Настройки Twitch Chat Bot и команды |
 | `data/admin/` | Пользователи, сессия и настройки интеграций |
-| `data/applications.json` | Заявки с сайта |
+| `data/applications.json` | Заявки с сайта |\n| `data/personal_subscriptions.json` | Личные подписки пользователей на стримеров |
 
 При первом запуске `paths.py` переносит старые корневые JSON-файлы в новую структуру, только если целевой файл ещё не существует. Уже существующие файлы в `data/` не перезаписываются.
 
