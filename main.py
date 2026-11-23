@@ -47,6 +47,7 @@ from chat import (
 )
 
 from webapp import configure_web_app
+from runtime_status import update as update_runtime_status
 
 try:
     from proxsybot import init_proxy, proxy_watcher
@@ -327,6 +328,13 @@ async def main():
         bot
     )
 
+    try:
+        telegram_me = await bot.get_me()
+        update_runtime_status("telegram", state="connected", label=telegram_me.username or telegram_me.full_name, error=None)
+    except Exception as e:
+        update_runtime_status("telegram", state="error", error=str(e))
+        logger.exception("TELEGRAM STATUS CHECK ERROR: %s", e)
+
 
     logger.info(
         "Запускаем polling..."
@@ -380,14 +388,14 @@ async def main():
 
 
     try:
-
+        update_runtime_status("telegram", state="connected", error=None)
         await dp.start_polling(
             bot
         )
 
 
     finally:
-
+        update_runtime_status("telegram", state="stopped")
         web_server.should_exit = True
         await web_task
         await bot.session.close()

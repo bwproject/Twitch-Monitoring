@@ -7,6 +7,12 @@ import logging
 from pathlib import Path
 from datetime import datetime, timezone
 
+try:
+    from runtime_status import update as update_runtime_status
+except ImportError:
+    def update_runtime_status(*args, **kwargs):
+        pass
+
 from aiogram import Bot, types
 from aiogram.filters import Command
 
@@ -159,6 +165,7 @@ async def monitor(
 
 
             online = get_streamers_status(names)
+            update_runtime_status("twitch_monitor", state="connected", last_check=datetime.now(timezone.utc).isoformat(), streamers=names, error=None)
 
 
             for streamer in STREAMERS:
@@ -412,7 +419,7 @@ async def monitor(
 
 
         except Exception as e:
-
+            update_runtime_status("twitch_monitor", state="error", error=str(e))
             logger.exception(
                 f"MONITOR ERROR: {e}"
             )

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from web_auth import authenticate, get_session_secret, load_users, save_users
+from runtime_status import snapshot as runtime_status_snapshot
 try:
     from bot3.twitch_api import get_streamer_status
 except ImportError:
@@ -50,6 +51,21 @@ def can_edit(user,name):
     return bool(user and (user.get("role")=="admin" or name.lower() in user.get("streamers",[])))
 @router.get("/", include_in_schema=False)
 async def landing_page(): return FileResponse(BASE_DIR / "index.html")
+
+@router.get("/status", include_in_schema=False)
+async def public_status():
+    status = runtime_status_snapshot()
+    return {
+        "telegram": {"state": status["telegram"]["state"], "label": status["telegram"].get("label")},
+        "twitch_chat": {"state": status["twitch_chat"]["state"], "username": status["twitch_chat"].get("username"), "channels": status["twitch_chat"].get("channels", [])},
+        "twitch_monitor": {"state": status["twitch_monitor"]["state"], "last_check": status["twitch_monitor"].get("last_check")},
+    }
+
+@router.get("/admin/api/status")
+async def admin_runtime_status(request: Request):
+    if not require_user(request):
+        return JSONResponse({"error": "Требуется вход"}, status_code=401)
+    return runtime_status_snapshot()
 
 @router.get("/admin",include_in_schema=False)
 @router.get("/admin/login",include_in_schema=False)

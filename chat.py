@@ -9,6 +9,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 from twitchio.ext import commands
 
+try:
+    from runtime_status import update as update_runtime_status
+except ImportError:
+    def update_runtime_status(*args, **kwargs):
+        pass
+
 
 try:
     from bot3.command_loader import get_all_commands
@@ -247,6 +253,7 @@ class TwitchChatBot(
         self
     ):
 
+        update_runtime_status("twitch_chat", state="connected", username=self.bot_nick, channels=load_channels(), error=None)
         logger.info(
             "✅ Успешная авторизация Twitch"
         )
@@ -280,6 +287,9 @@ class TwitchChatBot(
         )
 
 
+        channels = set(load_channels())
+        channels.add(name)
+        update_runtime_status("twitch_chat", state="connected", channels=sorted(channels), error=None)
         logger.info(
             f"✅ Подключен к чату стримера: {name}"
         )
@@ -423,6 +433,8 @@ class TwitchChatBot(
 
 async def start_chat_bot():
 
+    update_runtime_status("twitch_chat", state="connecting", channels=[], error=None)
+
 
     if not all([
 
@@ -439,6 +451,7 @@ async def start_chat_bot():
     ]):
 
 
+        update_runtime_status("twitch_chat", state="error", error="Не заполнены обязательные Twitch-переменные окружения")
         logger.error(
             "CHAT CONFIG ERROR"
         )
@@ -453,9 +466,13 @@ async def start_chat_bot():
 
 
     bot = TwitchChatBot()
-
-
-    await bot.start()
+    try:
+        await bot.start()
+    except Exception as e:
+        update_runtime_status("twitch_chat", state="error", error=str(e))
+        raise
+    finally:
+        update_runtime_status("twitch_chat", state="disconnected")
 
 
 
