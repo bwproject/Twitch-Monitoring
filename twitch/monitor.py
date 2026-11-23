@@ -13,19 +13,8 @@ except ImportError:
     def update_runtime_status(*args, **kwargs):
         pass
 
-from aiogram import Bot, types
-from aiogram.filters import Command
 
-try:
-    from bot3.twitch_api import (
-        get_streamer_status,
-        get_streamers_status
-    )
-except ImportError:
-    from twitch_api import (
-        get_streamer_status,
-        get_streamers_status
-    )
+from .api import get_streamer_status, get_streamers_status
 
 logger = logging.getLogger("twitch_monitor")
 
@@ -33,8 +22,9 @@ logger = logging.getLogger("twitch_monitor")
 # PATHS
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent
-STREAMERS_FILE = BASE_DIR / "streamers.json"
+from paths import TWITCH_STREAMERS_FILE, TWITCH_STREAMER_CONFIG_DIR
+
+STREAMERS_FILE = TWITCH_STREAMERS_FILE
 
 STREAMERS = []
 _last_mtime = None
@@ -68,7 +58,7 @@ def load_streamers():
             if not name:
                 continue
 
-            custom_file = BASE_DIR / f"{name}.json"
+            custom_file = TWITCH_STREAMER_CONFIG_DIR / f"{name}.json"
 
             if custom_file.exists():
                 try:
@@ -158,7 +148,7 @@ async def send_event(bot, notifier, streamer, event, **values):
 
 
 async def monitor(
-    bot: Bot,
+    bot,
     client_id,
     client_secret,
     interval=30,
@@ -380,39 +370,3 @@ async def monitor(
         await asyncio.sleep(
             interval
         )
-
-
-
-# ============================================================
-# /twitchapi
-# ============================================================
-
-def register_twitch_api_handler(dp):
-
-    @dp.message(Command("twitchapi"))
-    async def twitch_api_test(
-        message: types.Message
-    ):
-
-        try:
-
-            result = get_streamers_status(
-                [
-                    "ninja"
-                ]
-            )
-
-
-            await message.answer(
-
-                "✅ Twitch API OK\n"
-                f"Онлайн: {len(result)}"
-
-            )
-
-
-        except Exception as e:
-
-            await message.answer(
-                f"❌ ERROR: {e}"
-            )

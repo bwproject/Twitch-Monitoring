@@ -4,8 +4,8 @@ import json
 import os
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = Path(os.getenv("BOT_DATA_DIR", str(BASE_DIR / "data"))).resolve()
+from paths import DATA_DIR
+
 SETTINGS_FILE = DATA_DIR / "admin" / "integrations.json"
 
 ENV_KEYS = {

@@ -9,5 +9,21 @@ venv/
 logs/
 *.log
 
-# Runtime credentials and editable streamer data
-data/
+# Runtime data is excluded; only empty directory markers are tracked.
+data/*
+!data/.gitkeep
+!data/twitch/
+data/twitch/*
+!data/twitch/.gitkeep
+!data/twitch/streamers/
+data/twitch/streamers/*
+!data/twitch/streamers/.gitkeep
+!data/twitch/chat/
+data/twitch/chat/*
+!data/twitch/chat/.gitkeep
+!data/admin/
+data/admin/*
+!data/admin/.gitkeep
+!data/applications/
+data/applications/*
+!data/applications/.gitkeep
