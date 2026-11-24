@@ -2,6 +2,7 @@
 from __future__ import annotations
 import asyncio
 from subscriptions import subscribe, unsubscribe, list_subscriptions
+from runtime_status import update as update_runtime_status
 
 class LolkaNotificationClient:
     def __init__(self) -> None:
@@ -13,6 +14,11 @@ class LolkaNotificationClient:
         except Exception:
             pass
         self.client = commands.Bot(command_prefix="!", intents=intents)
+
+        @self.client.event
+        async def on_ready():
+            user = getattr(self.client, "user", None)
+            update_runtime_status("lolka", state="connected", username=getattr(user, "name", None), error=None)
 
         @self.client.event
         async def on_message(message):
