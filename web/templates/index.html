@@ -151,6 +151,8 @@
       </div>
       <section class="service-status" aria-label="Статус сервисов">
         <div class="service" id="telegramStatus" data-state="starting"><span class="lamp"></span><div><strong>Telegram-бот</strong><small>Проверяем подключение…</small></div></div>
+        <div class="service" id="discordStatus" data-state="starting"><span class="lamp"></span><div><strong>Discord-бот</strong><small>Проверяем подключение…</small></div></div>
+        <div class="service" id="lolkaStatus" data-state="starting"><span class="lamp"></span><div><strong>Lolka-бот</strong><small>Проверяем подключение…</small></div></div>
         <div class="service" id="twitchChatStatus" data-state="starting"><span class="lamp"></span><div><strong>Twitch Chat Bot</strong><small>Проверяем подключение…</small></div></div>
         <div class="service" id="twitchMonitorStatus" data-state="starting"><span class="lamp"></span><div><strong>Twitch Monitoring</strong><small>Проверяем мониторинг…</small></div></div>
       </section>
@@ -177,18 +179,18 @@ const statusLabels={connected:"Подключен",connecting:"Подключа�
 async function refreshServiceStatus(){
   try{
     const r=await fetch("/status",{cache:"no-store"});if(!r.ok)throw Error("status");const s=await r.json();
-    const entries=[["telegramStatus",s.telegram],["twitchChatStatus",s.twitch_chat],["twitchMonitorStatus",s.twitch_monitor]];
+    const entries=[["telegramStatus",s.telegram],["discordStatus",s.discord],["lolkaStatus",s.lolka],["twitchChatStatus",s.twitch_chat],["twitchMonitorStatus",s.twitch_monitor]];
     for(const [id,item] of entries){
       const el=document.getElementById(id);el.dataset.state=item.state||"starting";
       let detail=statusLabels[item.state]||"Статус неизвестен";
-      if(id==="telegramStatus"&&item.label)detail+=" · @"+item.label;
+      if((id==="telegramStatus"||id==="discordStatus"||id==="lolkaStatus")&&item.username)detail+=" · @"+item.username;
       if(id==="twitchChatStatus"&&item.username)detail+=" · @"+item.username;
       if(id==="twitchMonitorStatus"&&item.last_check)detail+=" · проверка: "+new Date(item.last_check).toLocaleTimeString();
       if(id==="twitchChatStatus"&&item.channels?.length)detail+=" · каналов: "+item.channels.length;
       el.querySelector("small").textContent=detail;
     }
   }catch{
-    for(const id of ["telegramStatus","twitchChatStatus","twitchMonitorStatus"]){const el=document.getElementById(id);el.dataset.state="error";el.querySelector("small").textContent="Статус недоступен";}
+    for(const id of ["telegramStatus","discordStatus","lolkaStatus","twitchChatStatus","twitchMonitorStatus"]){const el=document.getElementById(id);el.dataset.state="error";el.querySelector("small").textContent="Статус недоступен";}
   }
 }
 refreshServiceStatus();setInterval(refreshServiceStatus,10000);
