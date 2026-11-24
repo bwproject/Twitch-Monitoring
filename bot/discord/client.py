@@ -2,6 +2,7 @@
 from __future__ import annotations
 import asyncio
 from subscriptions import subscribe, unsubscribe, list_subscriptions
+from runtime_status import update as update_runtime_status
 
 class DiscordNotificationClient:
     def __init__(self) -> None:
@@ -11,6 +12,11 @@ class DiscordNotificationClient:
         intents.dm_messages = True
         intents.messages = True
         self.client = discord.Client(intents=intents)
+
+        @self.client.event
+        async def on_ready():
+            user = self.client.user
+            update_runtime_status("discord", state="connected", username=getattr(user, "name", None), error=None)
 
         @self.client.event
         async def on_message(message):
