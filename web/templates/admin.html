@@ -44,7 +44,8 @@ async function saveStreamerOrder(){
   catch(e){$('streamerOrderStatus').textContent=e.message;msg(e.message,true);}
   finally{button.disabled=false;}
 }
-\nasync function addStreamer(){
+
+async function addStreamer(){
   const input=$('newStreamerName');
   const button=$('addStreamerButton');
   const status=$('addStreamerStatus');
