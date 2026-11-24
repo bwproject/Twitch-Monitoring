@@ -16,7 +16,7 @@ class DiscordNotificationClient:
         @self.client.event
         async def on_ready():
             user = self.client.user
-            update_runtime_status("discord", state="connected", username=getattr(user, "name", None), error=None)
+            update_runtime_status("discord", state="connected", username=getattr(user, "name", None), id=str(getattr(user, "id", "")) or None, error=None)
 
         @self.client.event
         async def on_message(message):
