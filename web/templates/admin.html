@@ -56,6 +56,7 @@ async function addStreamer(){
   try{
     const result=await api('/streamers',{method:'POST',body:JSON.stringify({name:value})});
     const list=await api('/streamers');
+    renderStreamerOrder(list.map(item=>item.name));
     $('streamer').innerHTML='';
     list.forEach(item=>{const option=document.createElement('option');option.value=item.name;option.textContent=item.name;$('streamer').append(option)});
     $('streamer').value=result.streamer.name;
