@@ -141,7 +141,7 @@ async def public_status():
     status = runtime_status_snapshot()
     return {
         "telegram": {"state": status["telegram"]["state"], "label": status["telegram"].get("label")},
-        "discord": {"state": status["discord"]["state"], "username": status["discord"].get("username")},
+        "discord": {"state": status["discord"]["state"], "username": status["discord"].get("username"), "id": status["discord"].get("id")},
         "lolka": {"state": status["lolka"]["state"], "username": status["lolka"].get("username")},
         "twitch_chat": {"state": status["twitch_chat"]["state"], "username": status["twitch_chat"].get("username"), "channels": status["twitch_chat"].get("channels", [])},
         "twitch_monitor": {"state": status["twitch_monitor"]["state"], "last_check": status["twitch_monitor"].get("last_check")},
