@@ -234,8 +234,8 @@ document.addEventListener("click",async event=>{
     document.getElementById("telegramFollowCommand").textContent="/follow "+name;
     document.getElementById("discordFollowCommand").textContent="!follow "+name;
     document.getElementById("lolkaFollowCommand").textContent="!follow "+name;
-    const statusResponse=await fetch("/status",{cache:"no-store"});
-    const botStatus=statusResponse.ok?await statusResponse.json():{};
+    let botStatus={};
+    try{const statusResponse=await fetch("/status",{cache:"no-store"});if(statusResponse.ok)botStatus=await statusResponse.json();}catch(error){console.warn("Не удалось получить ссылки ботов",error);}
     const telegramName=String(botStatus.telegram?.label||"").replace(/^@/,"").trim();
     const discordId=String(botStatus.discord?.id||"").trim();
     const lolkaName=String(botStatus.lolka?.username||"").replace(/^@/,"").trim();
