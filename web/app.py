@@ -55,6 +55,24 @@ def get_streamer_file(name):
 def load_streamers():
     data=load_json(STREAMERS_FILE)
     return data if isinstance(data,list) else []
+
+STREAMER_ORDER_FILE = STREAMERS_FILE.parent / "streamer_order.json"
+def ordered_streamers(items):
+    """Apply the administrator's public display order; append newly added channels."""
+    try:
+        saved = load_json(STREAMER_ORDER_FILE)
+    except Exception:
+        saved = None
+    if not isinstance(saved, list):
+        saved = []
+    by_name = {str(item.get("name", "")).strip().lower(): item for item in items
+               if isinstance(item, dict) and item.get("name")}
+    ordered = [by_name.pop(str(name).strip().lower()) for name in saved
+               if str(name).strip().lower() in by_name]
+    ordered.extend(item for item in items if isinstance(item, dict)
+                   and str(item.get("name", "")).strip().lower() in by_name
+                   and by_name.pop(str(item.get("name", "")).strip().lower(), None) is not None)
+    return ordered
 def load_streamer(name):
     custom=get_streamer_file(name)
     if custom.exists():
@@ -136,7 +154,7 @@ async def admin_runtime_status(request: Request):
 @router.get("/public/streamers", include_in_schema=False)
 async def public_streamers():
     """Public list of configured Twitch channels, profile images and live/offline previews."""
-    items = load_streamers()
+    items = ordered_streamers(load_streamers())
     names = []
     for item in items:
         if not isinstance(item, dict):
@@ -216,10 +234,35 @@ async def admin_me(request:Request):
 async def admin_streamers(request:Request):
     user=require_user(request)
     if not user: return JSONResponse({"error":"Требуется вход"},status_code=401)
-    items=load_streamers()
+    items=ordered_streamers(load_streamers())
     if user.get("role")!="admin":
         allowed=set(user.get("streamers",[])); items=[x for x in items if str(x.get("name","")).lower() in allowed]
     return [{"name":x.get("name")} for x in items if x.get("name")]
+
+
+@router.put("/admin/api/streamers/order")
+async def admin_update_streamer_order(request: Request):
+    user = require_user(request)
+    if not user:
+        return JSONResponse({"error": "Требуется вход"}, status_code=401)
+    if user.get("role") != "admin":
+        return JSONResponse({"error": "Менять порядок стримеров может только администратор"}, status_code=403)
+    try:
+        payload = await request.json()
+        names = payload.get("order") if isinstance(payload, dict) else None
+        if not isinstance(names, list) or any(not isinstance(name, str) for name in names):
+            raise ValueError("Ожидается список Twitch-логинов")
+        names = [name.strip().lower() for name in names]
+        if len(names) != len(set(names)):
+            raise ValueError("В списке есть повторяющиеся каналы")
+        current = {str(item.get("name", "")).strip().lower() for item in load_streamers()
+                   if isinstance(item, dict) and item.get("name")}
+        if set(names) != current:
+            raise ValueError("Список каналов изменился. Обновите страницу и попробуйте снова.")
+        save_json(STREAMER_ORDER_FILE, names)
+        return {"ok": True, "order": names}
+    except (ValueError, TypeError) as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=400)
 
 @router.post("/admin/api/streamers")
 async def admin_add_streamer(request: Request):
